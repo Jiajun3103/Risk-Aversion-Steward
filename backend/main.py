@@ -34,6 +34,75 @@ async def get_inventory():
     # 将数据库行转换为 JSON 格式
     return [dict(row) for row in items]
 
+
+@app.get("/api/suppliers")
+async def get_suppliers():
+    conn = get_db_connection()
+    try:
+        suppliers = conn.execute(
+            '''
+            SELECT
+                MIN(suppliers.id) AS id,
+                suppliers.supplier_name,
+                suppliers.contact_email,
+                COUNT(inventory.id) AS supplied_item_count
+            FROM suppliers
+            LEFT JOIN inventory ON inventory.supplier_id = suppliers.id
+            GROUP BY suppliers.supplier_name, suppliers.contact_email
+            ORDER BY suppliers.supplier_name ASC
+            '''
+        ).fetchall()
+        return [dict(row) for row in suppliers]
+    finally:
+        conn.close()
+
+
+@app.get("/api/reports/summary")
+async def get_reports_summary():
+    conn = get_db_connection()
+    try:
+        summary = conn.execute(
+            '''
+            SELECT
+                COUNT(*) AS total_skus,
+                SUM(CASE WHEN stock <= 50 THEN 1 ELSE 0 END) AS low_stock_count,
+                SUM(CASE WHEN daily_sales <= 1 THEN 1 ELSE 0 END) AS slow_moving_count,
+                SUM(
+                    CASE
+                        WHEN daily_sales > 0 AND (stock / daily_sales) <= 15 THEN 1
+                        ELSE 0
+                    END
+                ) AS urgent_risk_count
+            FROM inventory
+            '''
+        ).fetchone()
+        supplier_count = conn.execute(
+            '''
+            SELECT COUNT(*) AS supplier_count
+            FROM (
+                SELECT supplier_name, COALESCE(contact_email, '')
+                FROM suppliers
+                GROUP BY supplier_name, COALESCE(contact_email, '')
+            )
+            '''
+        ).fetchone()
+
+        total_skus = summary['total_skus'] or 0
+        urgent_risk_count = summary['urgent_risk_count'] or 0
+
+        return {
+            'total_skus': total_skus,
+            'low_stock_count': summary['low_stock_count'] or 0,
+            'slow_moving_count': summary['slow_moving_count'] or 0,
+            'supplier_count': supplier_count['supplier_count'] or 0,
+            'risk_breakdown': {
+                'urgent': urgent_risk_count,
+                'stable': max(total_skus - urgent_risk_count, 0),
+            },
+        }
+    finally:
+        conn.close()
+
 # 1. 定义接收的数据格式
 class UserRegister(BaseModel):
     username: str
@@ -53,6 +122,8 @@ async def register_user(user: UserRegister):
                      (user.username, user.email, user.password))
         conn.commit()
         return {"message": "Success"}
+    except HTTPException as exc:
+        raise exc
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
