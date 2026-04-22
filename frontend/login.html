@@ -95,6 +95,16 @@
     </div>
 
     <script>
+        const SESSION_KEY = 'stewardSession';
+
+        function getStoredSession() {
+            try {
+                return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+            } catch (error) {
+                return null;
+            }
+        }
+
         // 弹窗控制
         function openRegisterModal() {
             const modal = document.getElementById('registerModal');
@@ -127,8 +137,13 @@
                 });
                 const result = await response.json();
                 if (response.ok) {
+                    localStorage.setItem(SESSION_KEY, JSON.stringify({
+                        isLoggedIn: true,
+                        username: result.username,
+                        email: payload.email
+                    }));
                     localStorage.setItem('stewardName', result.username);
-                    window.location.href = "index.html";
+                    window.location.href = "index.html#dashboard";
                 } else {
                     errorBox.innerText = result.detail || "Login failed.";
                     errorBox.classList.remove('hidden');
@@ -180,6 +195,13 @@
             } catch (err) {
                 errorBox.innerText = "Server offline.";
                 errorBox.classList.remove('hidden');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = getStoredSession();
+            if (session && session.isLoggedIn) {
+                window.location.href = 'index.html#dashboard';
             }
         });
     </script>
