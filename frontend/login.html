@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Risk-Aversion Steward</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ["Inter", "sans-serif"] },
+                    colors: { builtinBlue: "#00173d", builtinCyan: "#00c4cc", builtinDarkCyan: "#009fa5" }
+                }
+            }
+        }
+    </script>
+    <style>
+        .modal-overlay { background: rgba(0, 23, 61, 0.85); backdrop-filter: blur(8px); }
+        .modal-transition { transition: transform 0.3s ease-out, opacity 0.3s ease-out; }
+        .hidden-modal { opacity: 0; pointer-events: none; transform: scale(0.95); }
+        .show-modal { opacity: 1; pointer-events: auto; transform: scale(1); }
+    </style>
+</head>
+<body class="bg-builtinBlue flex items-center justify-center min-h-screen p-6 font-sans">
+
+    <!-- 主登录卡片 -->
+    <div class="bg-white w-full max-w-sm p-10 rounded-sm shadow-2xl relative z-10">
+        <div class="text-center mb-10">
+            <div class="inline-block bg-builtinBlue text-white font-black px-3 py-1 rounded mb-4 text-xs">RISK</div>
+            <h2 class="text-2xl font-extrabold text-builtinBlue uppercase tracking-tight">Butler Login</h2>
+            <p class="text-slate-400 text-[10px] mt-2 font-bold uppercase tracking-widest">Access System Console</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Gmail Address</label>
+                <input type="email" id="loginEmail" required class="w-full border-b border-slate-200 focus:border-builtinCyan outline-none py-2 transition text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Password</label>
+                <input type="password" id="loginPassword" required class="w-full border-b border-slate-200 focus:border-builtinCyan outline-none py-2 transition text-sm">
+            </div>
+            <div id="loginError" class="text-red-500 text-[10px] font-bold hidden bg-red-50 p-2 border-l-2 border-red-500"></div>
+            
+            <button type="submit" class="w-full bg-builtinCyan text-white py-4 font-black uppercase tracking-widest text-xs hover:bg-builtinDarkCyan transition shadow-md">
+                Enter System
+            </button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-slate-400 text-xs">New Steward? 
+                <button onclick="openRegisterModal()" class="text-builtinCyan font-bold hover:underline">Create Account</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- 注册弹窗 (Modal) -->
+    <div id="registerModal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay modal-transition hidden-modal">
+        <div class="bg-white w-full max-w-md p-10 rounded-sm shadow-2xl relative">
+            <!-- 关闭按钮 -->
+            <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-builtinBlue">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-extrabold text-builtinBlue italic">New Butler Account</h3>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Set up your risk control access</p>
+            </div>
+
+            <form id="registerForm" class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Username</label>
+                    <input type="text" id="regUsername" required class="w-full border-b border-slate-200 focus:border-builtinCyan outline-none py-2 transition text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Gmail Address</label>
+                    <input type="email" id="regEmail" required placeholder="name@gmail.com" class="w-full border-b border-slate-200 focus:border-builtinCyan outline-none py-2 transition text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Password</label>
+                    <input type="password" id="regPassword" required class="w-full border-b border-slate-200 focus:border-builtinCyan outline-none py-2 transition text-sm">
+                    <p class="text-[9px] text-slate-400 mt-2">8+ chars, Uppercase, Lowercase, Number & Symbol.</p>
+                </div>
+                <div id="regError" class="text-red-500 text-[10px] font-bold hidden bg-red-50 p-2 border-l-2 border-red-500"></div>
+                
+                <button type="submit" class="w-full bg-builtinBlue text-white py-4 font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition">
+                    Register & Activate
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 弹窗控制
+        function openRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            modal.classList.remove('hidden-modal');
+            modal.classList.add('show-modal');
+        }
+
+        function closeRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            modal.classList.add('hidden-modal');
+            modal.classList.remove('show-modal');
+        }
+
+        // 登录逻辑
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorBox = document.getElementById('loginError');
+            errorBox.classList.add('hidden');
+
+            const payload = {
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('stewardName', result.username);
+                    window.location.href = "index.html";
+                } else {
+                    errorBox.innerText = result.detail || "Login failed.";
+                    errorBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorBox.innerText = "Server offline.";
+                errorBox.classList.remove('hidden');
+            }
+        });
+
+        // 注册逻辑
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorBox = document.getElementById('regError');
+            errorBox.classList.add('hidden');
+
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const username = document.getElementById('regUsername').value;
+
+            // 强密码验证
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordRegex.test(password)) {
+                errorBox.innerText = "Weak password. Check requirements.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            if (!email.includes("@gmail.com")) {
+                errorBox.innerText = "Only @gmail.com is allowed.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                if (response.ok) {
+                    alert("Registered! Please login now.");
+                    closeRegisterModal(); // 注册成功后关闭弹窗
+                } else {
+                    const result = await response.json();
+                    errorBox.innerText = result.detail || "Registration failed.";
+                    errorBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorBox.innerText = "Server offline.";
+                errorBox.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

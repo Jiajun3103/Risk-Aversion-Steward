@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Risk-Aversion Steward | BuiltIn Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"] },
+            colors: {
+              builtinBlue: "#00173d",
+              builtinCyan: "#00c4cc",
+              builtinDarkCyan: "#009fa5",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .hero-gradient {
+        background: linear-gradient(135deg, #00173d 0%, #004e92 100%);
+        position: relative;
+        overflow: hidden;
+      }
+      /* 装饰圆点图层 */
+      .hero-dots {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        display: grid;
+        grid-template-columns: repeat(10, 8px);
+        gap: 10px;
+        opacity: 0.2;
+      }
+      .dot {
+        width: 4px;
+        height: 4px;
+        background: white;
+        border-radius: 50%;
+      }
+
+      /* Tab 激活样式 */
+      .tab-active {
+        color: #00c4cc !important;
+        border-bottom: 4px solid #00c4cc;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* 自定义滚动条 */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <!-- Header -->
+    <nav
+      class="bg-builtinBlue text-white px-8 py-4 flex justify-between items-center sticky top-0 z-50"
+    >
+      <div class="flex items-center gap-2">
+        <div class="bg-white text-builtinBlue font-black px-2 py-1 rounded">
+          RISK
+        </div>
+        <span class="font-bold tracking-tight text-lg">Inventory Steward</span>
+      </div>
+      <div class="flex gap-8 text-sm font-semibold uppercase tracking-wider">
+        <a href="#" class="hover:text-builtinCyan">Dashboard</a>
+        <a href="#" class="hover:text-builtinCyan">Suppliers</a>
+        <a href="#" class="hover:text-builtinCyan">Reports</a>
+        <button
+          class="bg-builtinCyan hover:bg-builtinDarkCyan text-white px-4 py-2 rounded-sm transition"
+        >
+          LOG OUT
+        </button>
+      </div>
+    </nav>
+
+    <!-- Hero Section (BuiltIn Style) -->
+    <div class="hero-gradient text-white py-20 px-8">
+      <div class="hero-dots">
+        <!-- 生成装饰点 -->
+        <script>
+          for (let i = 0; i < 50; i++)
+            document.write('<div class="dot"></div>');
+        </script>
+      </div>
+
+      <div class="max-w-6xl mx-auto relative z-10">
+        <h4 class="text-builtinCyan font-bold uppercase tracking-[0.2em] mb-4">
+          Risk Trends & Management
+        </h4>
+        <h1 class="text-6xl font-black mb-6 leading-tight">
+          Control. Grow.<br />Protect your capital.
+        </h1>
+
+        <div class="flex gap-12 text-sm font-medium">
+          <div>
+            <span class="text-builtinCyan font-bold">128</span> ACTIVE SKUS
+          </div>
+          <div>
+            <span class="text-builtinCyan font-bold">$42.5K</span> AT RISK
+            CAPITAL
+          </div>
+          <div>
+            <span class="text-builtinCyan font-bold">98.2%</span> SUPPLY UPTIME
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content with Tabs -->
+    <main class="max-w-6xl mx-auto -mt-12 relative z-20 pb-20">
+      <!-- Tab Switcher Box (Like the white bar in BuiltIn image) -->
+      <div
+        class="bg-white shadow-2xl rounded-sm p-2 flex flex-col md:flex-row items-stretch border-b border-slate-100"
+      >
+        <div class="flex-1 grid grid-cols-3">
+          <button
+            onclick="switchTab(event, 'tab-stockout')"
+            class="tab-active py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent"
+          >
+            <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+            <span class="text-sm">Stockout Alerts</span>
+          </button>
+          <button
+            onclick="switchTab(event, 'tab-clearance')"
+            class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent"
+          >
+            <i class="fa-solid fa-brain text-xl"></i>
+            <span class="text-sm">AI Clearance</span>
+          </button>
+          <button
+            onclick="switchTab(event, 'tab-return')"
+            class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent"
+          >
+            <i class="fa-solid fa-robot text-xl"></i>
+            <span class="text-sm">Auto Return Guard</span>
+          </button>
+        </div>
+        <div
+          class="bg-builtinCyan text-white p-6 flex items-center justify-center font-bold uppercase text-xs tracking-widest cursor-pointer hover:bg-builtinDarkCyan transition"
+        >
+          Live Risk Scan
+        </div>
+      </div>
+
+     <!-- Tab 1: Stockout & Procurement -->
+    <div id="tab-stockout" class="tab-content active">
+      <div class="flex justify-between items-end mb-8">
+        <div>
+          <h3 class="text-2xl font-extrabold text-builtinBlue">15-Day Stockout Forecast</h3>
+          <p class="text-slate-500">Inventory predicted to hit zero based on velocity and lead times.</p>
+        </div>
+        <button class="bg-slate-100 text-slate-700 px-4 py-2 rounded font-bold text-xs uppercase">
+          Export All POs
+        </button>
+       </div>
+
+      <!-- 动态数据容器：确保 ID 是 stockout-container -->
+      <div class="grid gap-4" id="stockout-container">
+        <p class="text-slate-400 p-8 text-center">Loading from database...</p>
+      </div>
+</div>
+        <!-- Tab 2: AI Clearance -->
+        <div id="tab-clearance" class="tab-content">
+          <div class="mb-8">
+            <h3 class="text-2xl font-extrabold text-builtinBlue italic">
+              AI Liquidation Strategy
+            </h3>
+            <p class="text-slate-500">
+              Automated decisions for items with &gt;90 days turnover.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-50 p-8 rounded border-t-4 border-builtinCyan">
+              <h4 class="text-lg font-black mb-2 uppercase tracking-tight">
+                Strategy: BOGO (Buy 1 Get 1)
+              </h4>
+              <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+                SKU-7044 (Legacy Speaker) has cost you $240 in storage fees this
+                month. AI suggests immediate BOGO to free up <b>$8,190</b> in
+                cash flow.
+              </p>
+              <div
+                class="flex justify-between items-center bg-white p-4 rounded shadow-sm"
+              >
+                <span class="text-xs font-bold text-slate-400"
+                  >SUCCESS PROBABILITY</span
+                >
+                <span class="text-builtinCyan font-black">92%</span>
+              </div>
+              <button
+                class="w-full mt-6 bg-builtinCyan text-white py-4 font-black uppercase tracking-widest text-xs hover:shadow-lg transition"
+              >
+                Execute Strategy
+              </button>
+            </div>
+
+            <div class="bg-slate-50 p-8 rounded border-t-4 border-slate-300">
+              <h4 class="text-lg font-black mb-2 uppercase tracking-tight">
+                Strategy: Flash Bundle
+              </h4>
+              <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+                Bundle Case (Red) with new iPhone arrivals. High turnover items
+                can carry these 567 units of dead stock.
+              </p>
+              <div
+                class="flex justify-between items-center bg-white p-4 rounded shadow-sm"
+              >
+                <span class="text-xs font-bold text-slate-400"
+                  >EXPECTED RECOVERY</span
+                >
+                <span class="text-slate-900 font-black">$2,835</span>
+              </div>
+              <button
+                class="w-full mt-6 bg-slate-200 text-slate-500 py-4 font-black uppercase tracking-widest text-xs cursor-not-allowed"
+              >
+                Strategy Loading...
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Return Guard -->
+        <div id="tab-return" class="tab-content">
+          <div class="mb-8">
+            <h3 class="text-2xl font-extrabold text-builtinBlue">
+              Autonomous Return Guard
+            </h3>
+            <p class="text-slate-500">
+              AI intercepts packages in-transit when logistics fail to meet SLA.
+            </p>
+          </div>
+          <div class="overflow-hidden border border-slate-100 rounded">
+            <table class="w-full text-left">
+              <thead
+                class="bg-slate-50 text-xs font-bold uppercase text-slate-400"
+              >
+                <tr>
+                  <th class="p-4">Customer</th>
+                  <th class="p-4">Trigger Reason</th>
+                  <th class="p-4">Status</th>
+                  <th class="p-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm">
+                <tr>
+                  <td class="p-4">
+                    <p class="font-bold">Mr. Zhang</p>
+                    <p class="text-xs text-slate-400">Order #88421</p>
+                  </td>
+                  <td class="p-4">
+                    <span
+                      class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase"
+                      >Slow Logistics (8d)</span
+                    >
+                  </td>
+                  <td class="p-4 text-builtinCyan font-bold italic">
+                    Eligible for Intercept
+                  </td>
+                  <td class="p-4 text-right">
+                    <button
+                      onclick="
+                        showMockAction(
+                          'Package Intercepted. Compensation Sent.',
+                        )
+                      "
+                      class="text-builtinCyan border border-builtinCyan px-4 py-2 rounded-sm font-bold text-xs hover:bg-builtinCyan hover:text-white transition"
+                    >
+                      Auto-Intercept
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="p-4">
+                    <p class="font-bold">Ms. Li</p>
+                    <p class="text-xs text-slate-400">Order #88435</p>
+                  </td>
+                  <td class="p-4">
+                    <span
+                      class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase"
+                      >Damaged Item</span
+                    >
+                  </td>
+                  <td class="p-4 text-slate-400 italic font-medium">
+                    Standard Review Required
+                  </td>
+                  <td class="p-4 text-right">
+                    <button
+                      class="text-slate-400 border border-slate-200 px-4 py-2 rounded-sm font-bold text-xs"
+                    >
+                      Manual Process
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="bg-builtinBlue text-white py-12 px-8 text-center border-t border-slate-800"
+    >
+      <p class="text-xs text-slate-500 uppercase tracking-widest">
+        Risk-Aversion Steward © 2024 — Data Refreshed Every 2 Mins
+      </p>
+    </footer>
+
+    <!-- Toast Modal -->
+    <div
+      id="toast"
+      class="fixed bottom-10 right-10 bg-builtinCyan text-white p-6 rounded shadow-2xl translate-y-20 opacity-0 transition-all duration-300 font-bold z-[100]"
+    >
+      Action Successful
+    </div>
+
+    <script>
+      // 当页面加载时，去后端抓取数据
+async function loadInventoryFromDB() {
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/inventory");
+    const data = await response.json();
+
+    // 修正点 1：获取正确的容器 ID
+    const container = document.getElementById("stockout-container"); 
+    
+    if (!data || data.length === 0) {
+      container.innerHTML = "<p class='text-center p-8'>No data in database.</p>";
+      return;
+    }
+
+    container.innerHTML = data.map((item, index) => {
+      // 修正点 2：计算剩余天数逻辑
+      const daysLeft = item.daily_sales > 0 ? Math.floor(item.stock / item.daily_sales) : 999;
+      const isRisk = daysLeft <= 15;
+
+      return `
+        <div class="border border-slate-100 p-6 rounded-sm hover:border-builtinCyan transition flex items-center justify-between bg-white shadow-sm">
+            <div class="flex gap-6 items-center">
+                <div class="w-12 h-12 bg-slate-50 rounded flex items-center justify-center text-builtinBlue font-bold">#${index + 1}</div>
+                <div>
+                    <p class="text-xs text-slate-400 font-bold uppercase">${item.sku}</p>
+                    <h4 class="font-bold text-lg">${item.name}</h4>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-12 text-center">
+                <div>
+                  <p class="text-xs text-slate-400 uppercase">Stock</p>
+                  <p class="font-bold">${item.stock}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 uppercase">Daily Sale</p>
+                  <p class="font-bold">${item.daily_sales}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 uppercase">Days Left</p>
+                  <p class="font-bold ${isRisk ? 'text-red-500' : 'text-builtinCyan'}">${daysLeft} Days</p>
+                </div>
+            </div>
+            <button onclick="alert('Creating PO for ${item.sku}')" class="bg-builtinBlue text-white px-6 py-3 font-bold text-xs uppercase rounded-sm hover:bg-builtinDarkCyan transition">
+              Create Auto PO
+            </button>
+        </div>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error("Error loading data:", error);
+    document.getElementById("stockout-container").innerHTML = "<p class='text-red-500 text-center'>Backend Offline.</p>";
+  }
+}
+
+// 确保其他 Tab 切换功能正常
+function switchTab(evt, tabId) {
+    const contents = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < contents.length; i++) contents[i].classList.remove("active");
+    const tabs = evt.currentTarget.parentNode.getElementsByTagName("button");
+    for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("tab-active");
+    document.getElementById(tabId).classList.add("active");
+    evt.currentTarget.classList.add("tab-active");
+}
+
+window.onload = () => {
+  loadInventoryFromDB();
+};
+    </script>
+  </body>
+</html>
