@@ -26,34 +26,34 @@ async function refreshInventoryUI() {
             const riskLabel = isRisk ? "URGENT" : "STABLE";
 
             return `
-            <div class="border border-slate-100 p-6 rounded-sm hover:border-builtinCyan transition flex items-center justify-between bg-white shadow-sm">
-                <div class="flex gap-6 items-center">
+            <div class="border border-slate-100 p-6 rounded-sm hover:border-builtinCyan transition grid grid-cols-[minmax(0,1fr)_360px_170px] items-center gap-8 bg-white shadow-sm">
+                <div class="flex gap-6 items-center min-w-0">
                     <div class="w-12 h-12 bg-slate-50 rounded flex items-center justify-center text-builtinBlue font-bold">#${index + 1}</div>
-                    <div>
+                    <div class="min-w-0">
                         <p class="text-[10px] font-bold uppercase ${isRisk ? 'text-red-400' : 'text-slate-400'}">
                             ${item.sku} | ${riskLabel}
                         </p>
-                        <h4 class="font-bold text-lg text-builtinBlue">${item.name}</h4>
+                        <h4 class="font-bold text-lg text-builtinBlue truncate">${item.name}</h4>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-12 text-center">
-                    <div>
+                <div class="grid grid-cols-3 min-w-[360px] rounded bg-slate-50 border border-slate-100 divide-x divide-slate-200 overflow-hidden">
+                    <div class="px-4 py-3 text-center">
                         <p class="text-[10px] text-slate-400 uppercase font-bold">Stock</p>
-                        <p class="font-bold text-slate-700">${item.stock}</p>
+                        <p class="font-bold text-slate-700 tabular-nums">${item.stock}</p>
                     </div>
-                    <div>
+                    <div class="px-4 py-3 text-center">
                         <p class="text-[10px] text-slate-400 uppercase font-bold">Daily Sale</p>
-                        <p class="font-bold text-slate-700">${item.daily_sales}</p>
+                        <p class="font-bold text-slate-700 tabular-nums">${item.daily_sales}</p>
                     </div>
-                    <div>
+                    <div class="px-4 py-3 text-center">
                         <p class="text-[10px] text-slate-400 uppercase font-bold">Days Left</p>
-                        <p class="font-bold ${statusColor}">${daysLeft} Days</p>
+                        <p class="font-bold tabular-nums ${statusColor}">${daysLeft} Days</p>
                     </div>
                 </div>
 
-                <div class="flex gap-2">
-                    <button onclick="generatePO('${item.sku}')" class="bg-builtinBlue text-white px-6 py-3 font-bold text-xs uppercase rounded-sm hover:bg-builtinDarkCyan transition">
+                <div class="flex justify-end">
+                    <button onclick="generatePO('${item.sku}')" class="bg-builtinBlue text-white px-6 py-3 font-bold text-xs uppercase rounded-sm hover:bg-builtinDarkCyan transition whitespace-nowrap">
                         Create Auto PO
                     </button>
                 </div>

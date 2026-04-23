@@ -15,6 +15,12 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
     <script>
+      // Login guard — must be logged in to view this page
+      if (!localStorage.getItem('stewardLoggedIn')) {
+        window.location.replace('login.html');
+      }
+    </script>
+    <script>
       tailwind.config = {
         theme: {
           extend: {
@@ -97,10 +103,11 @@
         <span class="font-bold tracking-tight text-lg">Inventory Steward</span>
       </div>
       <div class="flex gap-8 text-sm font-semibold uppercase tracking-wider">
-        <a href="#" class="hover:text-builtinCyan">Dashboard</a>
-        <a href="#" class="hover:text-builtinCyan">Suppliers</a>
-        <a href="#" class="hover:text-builtinCyan">Reports</a>
+        <a href="#" onclick="showView('dashboard'); return false;" data-view="dashboard" class="nav-link text-builtinCyan hover:text-builtinCyan">Dashboard</a>
+        <a href="#" onclick="showView('suppliers'); return false;" data-view="suppliers" class="nav-link hover:text-builtinCyan">Suppliers</a>
+        <a href="#" onclick="showView('reports'); return false;" data-view="reports" class="nav-link hover:text-builtinCyan">Reports</a>
         <button
+          onclick="logout()"
           class="bg-builtinCyan hover:bg-builtinDarkCyan text-white px-4 py-2 rounded-sm transition"
         >
           LOG OUT
@@ -108,6 +115,8 @@
       </div>
     </nav>
 
+    <!-- Dashboard View -->
+    <div id="view-dashboard">
     <!-- Hero Section (BuiltIn Style) -->
     <div class="hero-gradient text-white py-20 px-8">
       <div class="hero-dots">
@@ -126,16 +135,19 @@
           Control. Grow.<br />Protect your capital.
         </h1>
 
-        <div class="flex gap-12 text-sm font-medium">
+        <div class="flex gap-12 text-sm font-medium flex-wrap">
           <div>
-            <span class="text-builtinCyan font-bold">128</span> ACTIVE SKUS
+            <span id="hero-active-skus" class="text-builtinCyan font-bold">--</span> ACTIVE SKUS
           </div>
           <div>
-            <span class="text-builtinCyan font-bold">$42.5K</span> AT RISK
-            CAPITAL
+            <span id="hero-low-stock" class="text-builtinCyan font-bold">--</span> LOW STOCK
+            ITEMS
           </div>
           <div>
-            <span class="text-builtinCyan font-bold">98.2%</span> SUPPLY UPTIME
+            <span id="hero-slow-moving" class="text-builtinCyan font-bold">--</span> SLOW MOVING
+          </div>
+          <div>
+            <span id="hero-supplier-count" class="text-builtinCyan font-bold">--</span> SUPPLIERS
           </div>
         </div>
       </div>
@@ -171,6 +183,7 @@
           </button>
         </div>
         <div
+          onclick="runActionScan()"
           class="bg-builtinCyan text-white p-6 flex items-center justify-center font-bold uppercase text-xs tracking-widest cursor-pointer hover:bg-builtinDarkCyan transition"
         >
           Live Risk Scan
@@ -179,159 +192,155 @@
 
      <!-- Tab 1: Stockout & Procurement -->
     <div id="tab-stockout" class="tab-content active">
-      <div class="flex justify-between items-end mb-8">
+      <div class="flex justify-between items-end mt-3 mb-8">
         <div>
           <h3 class="text-2xl font-extrabold text-builtinBlue">15-Day Stockout Forecast</h3>
           <p class="text-slate-500">Inventory predicted to hit zero based on velocity and lead times.</p>
+          <p id="scan-meta" class="text-[11px] text-slate-400 mt-1">Last scan: --</p>
         </div>
-        <button class="bg-slate-100 text-slate-700 px-4 py-2 rounded font-bold text-xs uppercase">
-          Export All POs
-        </button>
+        <div class="flex gap-2">
+          <button onclick="runActionScan()" class="bg-builtinCyan text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-builtinDarkCyan transition">
+            Scan Actions
+          </button>
+          <button onclick="exportAllPOs()" class="bg-slate-100 text-slate-700 px-4 py-2 rounded font-bold text-xs uppercase hover:bg-slate-200 transition">
+            Export All POs
+          </button>
+        </div>
        </div>
 
       <!-- 动态数据容器：确保 ID 是 stockout-container -->
       <div class="grid gap-4" id="stockout-container">
         <p class="text-slate-400 p-8 text-center">Loading from database...</p>
       </div>
+
+      <div class="mt-8">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-lg font-extrabold text-builtinBlue">Action Queue (Pending Review)</h4>
+          <button onclick="loadPendingActions()" class="text-xs font-bold uppercase text-slate-500 hover:text-builtinCyan">Refresh</button>
+        </div>
+        <div id="action-queue-container" class="grid gap-3">
+          <p class="text-slate-400 p-6 text-center bg-white border border-slate-100 rounded">No pending actions yet. Click Scan Actions.</p>
+        </div>
+      </div>
 </div>
         <!-- Tab 2: AI Clearance -->
         <div id="tab-clearance" class="tab-content">
-          <div class="mb-8">
-            <h3 class="text-2xl font-extrabold text-builtinBlue italic">
-              AI Liquidation Strategy
-            </h3>
-            <p class="text-slate-500">
-              Automated decisions for items with &gt;90 days turnover.
-            </p>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-slate-50 p-8 rounded border-t-4 border-builtinCyan">
-              <h4 class="text-lg font-black mb-2 uppercase tracking-tight">
-                Strategy: BOGO (Buy 1 Get 1)
-              </h4>
-              <p class="text-sm text-slate-600 mb-6 leading-relaxed">
-                SKU-7044 (Legacy Speaker) has cost you $240 in storage fees this
-                month. AI suggests immediate BOGO to free up <b>$8,190</b> in
-                cash flow.
+          <div class="mt-3 mb-8 flex justify-between items-center">
+            <div>
+              <h3 class="text-2xl font-extrabold text-builtinBlue italic">
+                AI Liquidation Strategy
+              </h3>
+              <p class="text-slate-500">
+                Automated decisions for items with &gt;90 days turnover. Powered by ILMU GLM-5.1.
               </p>
-              <div
-                class="flex justify-between items-center bg-white p-4 rounded shadow-sm"
-              >
-                <span class="text-xs font-bold text-slate-400"
-                  >SUCCESS PROBABILITY</span
-                >
-                <span class="text-builtinCyan font-black">92%</span>
-              </div>
-              <button
-                class="w-full mt-6 bg-builtinCyan text-white py-4 font-black uppercase tracking-widest text-xs hover:shadow-lg transition"
-              >
-                Execute Strategy
-              </button>
             </div>
-
-            <div class="bg-slate-50 p-8 rounded border-t-4 border-slate-300">
-              <h4 class="text-lg font-black mb-2 uppercase tracking-tight">
-                Strategy: Flash Bundle
-              </h4>
-              <p class="text-sm text-slate-600 mb-6 leading-relaxed">
-                Bundle Case (Red) with new iPhone arrivals. High turnover items
-                can carry these 567 units of dead stock.
-              </p>
-              <div
-                class="flex justify-between items-center bg-white p-4 rounded shadow-sm"
-              >
-                <span class="text-xs font-bold text-slate-400"
-                  >EXPECTED RECOVERY</span
-                >
-                <span class="text-slate-900 font-black">$2,835</span>
-              </div>
-              <button
-                class="w-full mt-6 bg-slate-200 text-slate-500 py-4 font-black uppercase tracking-widest text-xs cursor-not-allowed"
-              >
-                Strategy Loading...
-              </button>
+            <button
+              id="ai-run-btn"
+              onclick="runAIAnalysis()"
+              class="bg-builtinCyan text-white px-8 py-3 font-black uppercase tracking-widest text-xs hover:shadow-lg transition rounded-sm flex items-center gap-2">
+              <i class="fas fa-robot"></i> Run AI Analysis
+            </button>
+          </div>
+          <div id="ai-clearance-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+            <div class="col-span-2 text-center py-16 text-slate-300">
+              <i class="fas fa-robot text-5xl mb-4"></i>
+              <p class="font-bold mt-4">Click "Run AI Analysis" to generate real-time strategies</p>
             </div>
           </div>
         </div>
 
         <!-- Tab 3: Return Guard -->
         <div id="tab-return" class="tab-content">
-          <div class="mb-8">
+          <div class="mt-3 mb-8">
             <h3 class="text-2xl font-extrabold text-builtinBlue">
               Autonomous Return Guard
             </h3>
             <p class="text-slate-500">
-              AI intercepts packages in-transit when logistics fail to meet SLA.
+              AI-assisted return &amp; complaint analysis. Submit a return case for instant issue categorisation and recommended resolution.
             </p>
           </div>
-          <div class="overflow-hidden border border-slate-100 rounded">
-            <table class="w-full text-left">
-              <thead
-                class="bg-slate-50 text-xs font-bold uppercase text-slate-400"
-              >
-                <tr>
-                  <th class="p-4">Customer</th>
-                  <th class="p-4">Trigger Reason</th>
-                  <th class="p-4">Status</th>
-                  <th class="p-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 text-sm">
-                <tr>
-                  <td class="p-4">
-                    <p class="font-bold">Mr. Zhang</p>
-                    <p class="text-xs text-slate-400">Order #88421</p>
-                  </td>
-                  <td class="p-4">
-                    <span
-                      class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase"
-                      >Slow Logistics (8d)</span
-                    >
-                  </td>
-                  <td class="p-4 text-builtinCyan font-bold italic">
-                    Eligible for Intercept
-                  </td>
-                  <td class="p-4 text-right">
-                    <button
-                      onclick="
-                        showMockAction(
-                          'Package Intercepted. Compensation Sent.',
-                        )
-                      "
-                      class="text-builtinCyan border border-builtinCyan px-4 py-2 rounded-sm font-bold text-xs hover:bg-builtinCyan hover:text-white transition"
-                    >
-                      Auto-Intercept
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="p-4">
-                    <p class="font-bold">Ms. Li</p>
-                    <p class="text-xs text-slate-400">Order #88435</p>
-                  </td>
-                  <td class="p-4">
-                    <span
-                      class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase"
-                      >Damaged Item</span
-                    >
-                  </td>
-                  <td class="p-4 text-slate-400 italic font-medium">
-                    Standard Review Required
-                  </td>
-                  <td class="p-4 text-right">
-                    <button
-                      class="text-slate-400 border border-slate-200 px-4 py-2 rounded-sm font-bold text-xs"
-                    >
-                      Manual Process
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+
+          <!-- Return Submission Form -->
+          <div class="bg-white border border-slate-100 rounded shadow-sm p-6 mb-6">
+            <h4 class="font-bold text-builtinBlue mb-4 text-sm uppercase tracking-wider"><i class="fas fa-search mr-1 text-builtinCyan"></i>Analyse Return Case</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Customer Name</label>
+                <input id="rg-customer" type="text" placeholder="e.g. Mr. Zhang" class="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-builtinCyan" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Order Reference</label>
+                <div class="flex gap-2">
+                  <select id="rg-order" onchange="onReturnOrderChange()" class="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-builtinCyan bg-white">
+                    <option value="">Select order number (optional)</option>
+                  </select>
+                  <button type="button" onclick="loadReturnOrders(true)" class="px-3 py-2 text-[11px] font-bold uppercase rounded border border-slate-200 text-slate-600 hover:bg-slate-50">Refresh</button>
+                </div>
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Customer Return Reason</label>
+              <textarea id="rg-reason" rows="3" placeholder="e.g. The package arrived damaged, screen was cracked on arrival." class="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-builtinCyan resize-none"></textarea>
+            </div>
+            <div class="mb-4">
+              <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Staff / Warehouse Note (optional)</label>
+              <textarea id="rg-staff" rows="2" placeholder="e.g. Item visibly dented. Supplier batch #B22 suspected." class="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-builtinCyan resize-none"></textarea>
+            </div>
+            <button onclick="analyseReturn()" class="bg-builtinCyan text-white px-6 py-2 rounded-sm font-bold text-xs uppercase hover:bg-builtinDarkCyan transition">
+              <i class="fas fa-robot mr-1"></i>Analyse &amp; Recommend
+            </button>
+          </div>
+
+          <!-- Analysis Result -->
+          <div id="rg-result" class="hidden bg-white border border-slate-100 rounded shadow-sm p-6">
+            <h4 class="font-bold text-builtinBlue mb-4 text-sm uppercase tracking-wider"><i class="fas fa-clipboard-check mr-1 text-builtinCyan"></i>Analysis Result</h4>
+            <div id="rg-result-body"></div>
+          </div>
+
+          <!-- Recent Cases Placeholder -->
+          <div class="mt-6">
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Recent Analyses</h4>
+            <div id="rg-history" class="grid gap-3">
+              <p class="text-slate-300 text-sm text-center p-4">No cases analysed yet in this session.</p>
+            </div>
           </div>
         </div>
       </div>
     </main>
+    </div><!-- /view-dashboard -->
+
+    <!-- Suppliers View -->
+    <div id="view-suppliers" style="display:none" class="max-w-6xl mx-auto py-16 px-8 pb-24">
+      <div class="mb-8">
+        <h3 class="text-2xl font-extrabold text-builtinBlue">Supplier Directory</h3>
+        <p class="text-slate-500">Backup suppliers and delivery performance tracker.</p>
+      </div>
+      <div id="suppliers-container" class="grid gap-4">
+        <p class="text-center text-slate-400 p-8">Loading suppliers...</p>
+      </div>
+    </div>
+
+    <!-- Reports View -->
+    <div id="view-reports" style="display:none" class="max-w-6xl mx-auto py-16 px-8 pb-24">
+      <div class="mb-8">
+        <h3 class="text-2xl font-extrabold text-builtinBlue">Inventory Summary Report</h3>
+        <p class="text-slate-500">Live snapshot of stock health and risk metrics.</p>
+      </div>
+      <div id="report-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <p class="text-slate-400 col-span-4 text-center p-8">Loading report...</p>
+      </div>
+      <!-- Decision Impact Metrics -->
+      <div class="mb-3">
+        <h4 class="text-sm font-bold text-builtinBlue uppercase tracking-wider mb-3"><i class="fas fa-bolt text-builtinCyan mr-1"></i>Decision Impact Metrics</h4>
+        <div id="impact-metrics" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          <p class="text-slate-400 col-span-3 text-center p-4 text-sm">Loading impact data...</p>
+        </div>
+      </div>
+      <div class="bg-white border border-slate-100 p-6 rounded shadow-sm">
+        <h4 class="font-bold text-builtinBlue mb-4 text-sm uppercase tracking-wider">Stock Levels by SKU</h4>
+        <canvas id="stockChart" height="80"></canvas>
+      </div>
+    </div>
 
     <!-- Footer -->
     <footer
@@ -351,74 +360,550 @@
     </div>
 
     <script>
-      // 当页面加载时，去后端抓取数据
+const API_BASE = 'http://127.0.0.1:8000/api';
+let _lastAutoScanTs = 0;
+const AUTO_REFRESH_MS = 45000;
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.remove('translate-y-20', 'opacity-0');
+  setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+}
+
+async function loadDashboardSummary() {
+  try {
+    const res = await fetch(`${API_BASE}/dashboard/summary`);
+    const data = await res.json();
+    document.getElementById('hero-active-skus').textContent = data.active_skus ?? '--';
+    document.getElementById('hero-low-stock').textContent = data.low_stock_items ?? '--';
+    document.getElementById('hero-slow-moving').textContent = data.slow_moving_items ?? '--';
+    document.getElementById('hero-supplier-count').textContent = data.supplier_count ?? '--';
+  } catch (e) {
+    // Keep UI stable if summary fails
+  }
+}
+
 async function loadInventoryFromDB() {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/inventory");
+    const response = await fetch(`${API_BASE}/inventory`);
     const data = await response.json();
+    const container = document.getElementById('stockout-container');
 
-    // 修正点 1：获取正确的容器 ID
-    const container = document.getElementById("stockout-container"); 
-    
     if (!data || data.length === 0) {
       container.innerHTML = "<p class='text-center p-8'>No data in database.</p>";
       return;
     }
 
     container.innerHTML = data.map((item, index) => {
-      // 修正点 2：计算剩余天数逻辑
       const daysLeft = item.daily_sales > 0 ? Math.floor(item.stock / item.daily_sales) : 999;
       const isRisk = daysLeft <= 15;
+      // Decision-intelligence: priority badge derived from days_left
+      const priorityLabel = daysLeft <= 3 ? 'CRITICAL' : daysLeft <= 7 ? 'HIGH' : daysLeft <= 15 ? 'MEDIUM' : (item.stock >= 40 && item.daily_sales <= 1.0 ? 'SLOW-MOVE' : 'LOW');
+      const priorityStyle = daysLeft <= 3 ? 'bg-red-600 text-white' : daysLeft <= 7 ? 'bg-orange-500 text-white' : daysLeft <= 15 ? 'bg-amber-400 text-builtinBlue' : (item.stock >= 40 && item.daily_sales <= 1.0 ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500');
+      const reorderQty = item.daily_sales > 0 ? Math.ceil(item.daily_sales * 30) : 0;
+      const recText = isRisk
+        ? `Reorder ${reorderQty} units — covers 30 days demand`
+        : (item.stock >= 40 && item.daily_sales <= 1.0 ? 'Consider clearance or pause restocking' : 'Stock level acceptable');
 
       return `
-        <div class="border border-slate-100 p-6 rounded-sm hover:border-builtinCyan transition flex items-center justify-between bg-white shadow-sm">
-            <div class="flex gap-6 items-center">
-                <div class="w-12 h-12 bg-slate-50 rounded flex items-center justify-center text-builtinBlue font-bold">#${index + 1}</div>
-                <div>
-                    <p class="text-xs text-slate-400 font-bold uppercase">${item.sku}</p>
-                    <h4 class="font-bold text-lg">${item.name}</h4>
-                </div>
+        <div class="border border-slate-100 p-6 rounded-sm hover:border-builtinCyan transition grid grid-cols-[minmax(0,1fr)_360px_170px] items-center gap-8 bg-white shadow-sm">
+          <div class="flex gap-6 items-center min-w-0">
+            <div class="w-12 h-12 bg-slate-50 rounded flex items-center justify-center text-builtinBlue font-bold">#${index + 1}</div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[9px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider ${priorityStyle}">${priorityLabel}</span>
+                <p class="text-xs text-slate-400 font-bold uppercase">${item.sku}</p>
+              </div>
+              <h4 class="font-bold text-lg truncate">${item.name}</h4>
+              <p class="text-xs text-slate-500 mt-1 truncate"><i class="fas fa-lightbulb text-builtinCyan mr-1"></i>${recText}</p>
             </div>
-            <div class="grid grid-cols-3 gap-12 text-center">
-                <div>
-                  <p class="text-xs text-slate-400 uppercase">Stock</p>
-                  <p class="font-bold">${item.stock}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-slate-400 uppercase">Daily Sale</p>
-                  <p class="font-bold">${item.daily_sales}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-slate-400 uppercase">Days Left</p>
-                  <p class="font-bold ${isRisk ? 'text-red-500' : 'text-builtinCyan'}">${daysLeft} Days</p>
-                </div>
+          </div>
+          <div class="grid grid-cols-3 min-w-[360px] rounded bg-slate-50 border border-slate-100 divide-x divide-slate-200 overflow-hidden">
+            <div class="px-4 py-3 text-center">
+              <p class="text-xs text-slate-400 uppercase">Stock</p>
+              <p class="font-bold tabular-nums">${item.stock}</p>
             </div>
-            <button onclick="alert('Creating PO for ${item.sku}')" class="bg-builtinBlue text-white px-6 py-3 font-bold text-xs uppercase rounded-sm hover:bg-builtinDarkCyan transition">
+            <div class="px-4 py-3 text-center">
+              <p class="text-xs text-slate-400 uppercase">Daily Sale</p>
+              <p class="font-bold tabular-nums">${item.daily_sales}</p>
+            </div>
+            <div class="px-4 py-3 text-center">
+              <p class="text-xs text-slate-400 uppercase">Days Left</p>
+              <p class="font-bold tabular-nums ${isRisk ? 'text-red-500' : 'text-builtinCyan'}">${daysLeft === 999 ? '999+' : daysLeft} Days</p>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button onclick="alert('Creating PO for ${item.sku}\\nRecommended qty: ${reorderQty} units')" class="bg-builtinBlue text-white px-6 py-3 font-bold text-xs uppercase rounded-sm hover:bg-builtinDarkCyan transition whitespace-nowrap">
               Create Auto PO
             </button>
+          </div>
         </div>
       `;
-    }).join("");
-
+    }).join('');
   } catch (error) {
-    console.error("Error loading data:", error);
-    document.getElementById("stockout-container").innerHTML = "<p class='text-red-500 text-center'>Backend Offline.</p>";
+    document.getElementById('stockout-container').innerHTML = "<p class='text-red-500 text-center'>Backend Offline.</p>";
   }
 }
 
-// 确保其他 Tab 切换功能正常
-function switchTab(evt, tabId) {
-    const contents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < contents.length; i++) contents[i].classList.remove("active");
-    const tabs = evt.currentTarget.parentNode.getElementsByTagName("button");
-    for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("tab-active");
-    document.getElementById(tabId).classList.add("active");
-    evt.currentTarget.classList.add("tab-active");
+async function exportAllPOs() {
+  try {
+    const res = await fetch(`${API_BASE}/inventory`);
+    const data = await res.json();
+    if (!data || data.length === 0) { showToast('No inventory data to export.'); return; }
+
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const rows = [
+      ['PO Number', 'Date', 'SKU', 'Product Name', 'Current Stock', 'Daily Sales', 'Days Left', 'Recommended Order Qty', 'Priority', 'Supplier ID']
+    ];
+
+    data.forEach((item, i) => {
+      const daysLeft = item.daily_sales > 0 ? Math.floor(item.stock / item.daily_sales) : 999;
+      const reorderQty = item.daily_sales > 0 ? Math.ceil(item.daily_sales * 30) : 0;
+      const priority = daysLeft <= 5 ? 'CRITICAL' : daysLeft <= 15 ? 'HIGH' : daysLeft <= 30 ? 'MEDIUM' : 'LOW';
+      const poNum = `PO-${dateStr.replace(/-/g, '')}-${String(i + 1).padStart(3, '0')}`;
+      rows.push([
+        poNum, dateStr, item.sku, item.name,
+        item.stock, item.daily_sales, daysLeft === 999 ? 'N/A' : daysLeft,
+        reorderQty, priority, item.supplier_id ?? 'N/A'
+      ]);
+    });
+
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Purchase_Orders_${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${data.length} POs to CSV.`);
+  } catch (e) {
+    showToast('Export failed: ' + e.message);
+  }
 }
 
-window.onload = () => {
-  loadInventoryFromDB();
+function updateScanMeta(scanData) {
+  const el = document.getElementById('scan-meta');
+  if (!el) return;
+  if (!scanData) {
+    el.textContent = 'Last scan: --';
+    return;
+  }
+  const rawTs = scanData.scanned_at;
+  const mode = (scanData.trigger_source || 'manual').toUpperCase();
+  const created = scanData.actions_created ?? scanData.created ?? 0;
+  const dup = scanData.duplicates_skipped ?? 0;
+  const tsText = rawTs ? new Date(rawTs).toLocaleString() : new Date().toLocaleString();
+  el.textContent = `Last scan: ${tsText} • Mode: ${mode} • Created: ${created} • Duplicates skipped: ${dup}`;
+}
+
+async function runActionScan(triggerSource = 'manual', options = {}) {
+  const { silent = false } = options;
+  try {
+    const source = triggerSource === 'auto' ? 'auto' : 'manual';
+    const res = await fetch(`${API_BASE}/actions/scan?trigger_source=${source}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Scan failed');
+    updateScanMeta(data);
+    if (!silent) {
+      showToast(`Scan complete. Created ${data.actions_created ?? data.created} action(s), skipped ${data.duplicates_skipped}.`);
+    }
+    await loadPendingActions();
+    await loadDashboardSummary();
+    if (document.getElementById('view-reports').style.display !== 'none') {
+      await loadReports();
+    }
+  } catch (e) {
+    if (!silent) showToast(`Scan failed: ${e.message}`);
+  }
+}
+
+async function autoScanIfDue(force = false) {
+  const now = Date.now();
+  if (!force && now - _lastAutoScanTs < AUTO_REFRESH_MS) return;
+  _lastAutoScanTs = now;
+  await runActionScan('auto', { silent: true });
+}
+
+async function loadPendingActions() {
+  const container = document.getElementById('action-queue-container');
+  if (!container) return;
+  try {
+    const res = await fetch(`${API_BASE}/actions/pending`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to load pending actions');
+    if (!data.length) {
+      container.innerHTML = "<p class='text-slate-400 p-6 text-center bg-white border border-slate-100 rounded'>No pending actions. Run scan to detect issues.</p>";
+      return;
+    }
+
+    container.innerHTML = data.map(a => {
+      const issueLabel = a.issue_type === 'low_stock' ? 'LOW STOCK' : 'SLOW MOVING';
+      const issueStyle = a.issue_type === 'low_stock' ? 'text-red-600 bg-red-100' : 'text-amber-600 bg-amber-100';
+      const pLevel = a.priority_level || 'MEDIUM';
+      const pStyle = pLevel === 'HIGH' ? 'bg-red-500 text-white' : pLevel === 'MEDIUM' ? 'bg-amber-400 text-builtinBlue' : 'bg-slate-200 text-slate-600';
+      const rec = a.recommendation || a.recommended_action || '';
+      const expl = a.explanation || '';
+      const impact = a.estimated_impact || '';
+      return `
+        <div class="bg-white border border-slate-100 rounded p-4 shadow-sm">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="text-[9px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider ${pStyle}">${pLevel}</span>
+                <span class="text-[10px] font-bold px-2 py-1 rounded ${issueStyle}">${issueLabel}</span>
+                <span class="text-xs text-slate-400">${a.sku} • ${a.supplier_name || 'No Supplier'}</span>
+              </div>
+              <p class="font-bold text-builtinBlue truncate">${a.name || 'Unknown Item'}</p>
+              ${rec ? `<p class="text-xs font-semibold text-builtinCyan mt-1"><i class="fas fa-check-circle mr-1"></i>${rec}</p>` : ''}
+              ${expl ? `<p class="text-xs text-slate-500 mt-1">${expl}</p>` : ''}
+              ${impact ? `<p class="text-xs text-green-600 mt-1"><i class="fas fa-chart-line mr-1"></i>${impact}</p>` : ''}
+            </div>
+            <div class="flex flex-col gap-2 shrink-0">
+              <button onclick="approveAction(${a.id}, false)" class="px-3 py-2 text-xs font-bold rounded bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap">Approve Recommendation</button>
+              <button onclick="approveAction(${a.id}, true)" class="px-3 py-2 text-xs font-bold rounded bg-builtinCyan text-white hover:bg-builtinDarkCyan whitespace-nowrap">Approve &amp; Send Notification</button>
+              <button onclick="rejectAction(${a.id})" class="px-3 py-2 text-xs font-bold rounded border border-red-200 text-red-500 hover:bg-red-50 whitespace-nowrap">Reject Recommendation</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = `<p class='text-red-500 p-6 text-center bg-white border border-slate-100 rounded'>${e.message}</p>`;
+  }
+}
+
+async function approveAction(id, sendEmailNow) {
+  try {
+    const payload = {
+      reviewed_by: localStorage.getItem('stewardName') || 'admin',
+      remarks: sendEmailNow ? 'Approved and send immediately' : 'Approved',
+      send_email: sendEmailNow,
+    };
+    const res = await fetch(`${API_BASE}/actions/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Approve failed');
+
+    if (sendEmailNow && data.send_result) {
+      showToast(`Approved. Email status: ${data.send_result.notification_status}`);
+    } else {
+      showToast('Action approved');
+    }
+
+    await loadPendingActions();
+    await loadDashboardSummary();
+    if (document.getElementById('view-reports').style.display !== 'none') {
+      await loadReports();
+    }
+  } catch (e) {
+    showToast(`Approve failed: ${e.message}`);
+  }
+}
+
+async function rejectAction(id) {
+  const remarks = prompt('Enter rejection reason:', 'Not aligned with current business priority');
+  try {
+    const res = await fetch(`${API_BASE}/actions/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reviewed_by: localStorage.getItem('stewardName') || 'admin',
+        remarks: remarks || 'Rejected by admin',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Reject failed');
+
+    showToast('Action rejected');
+    await loadPendingActions();
+    await loadDashboardSummary();
+    if (document.getElementById('view-reports').style.display !== 'none') {
+      await loadReports();
+    }
+  } catch (e) {
+    showToast(`Reject failed: ${e.message}`);
+  }
+}
+
+function showMockAction(msg) {
+  showToast(msg);
+}
+
+// ─── Return Guard analysis ────────────────────────────────────────────────────
+const _rgHistory = [];
+let _rgOrders = [];
+
+async function loadReturnOrders(showMessage = false) {
+  const select = document.getElementById('rg-order');
+  if (!select) return;
+  try {
+    const res = await fetch(`${API_BASE}/orders`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to load orders');
+
+    _rgOrders = Array.isArray(data) ? data : [];
+    select.innerHTML = '<option value="">Select order number (optional)</option>' +
+      _rgOrders.map(o => `<option value="${o.order_no}">${o.order_no} • ${o.customer_name} • ${o.item_name || o.sku || 'Item'}</option>`).join('');
+
+    if (showMessage) showToast(`Loaded ${_rgOrders.length} order(s).`);
+  } catch (e) {
+    select.innerHTML = '<option value="">Order list unavailable</option>';
+    if (showMessage) showToast(`Order load failed: ${e.message}`);
+  }
+}
+
+function onReturnOrderChange() {
+  const orderNo = document.getElementById('rg-order').value;
+  if (!orderNo) return;
+  const found = _rgOrders.find(o => o.order_no === orderNo);
+  if (!found) return;
+
+  const customerInput = document.getElementById('rg-customer');
+  if (customerInput && !customerInput.value.trim()) {
+    customerInput.value = found.customer_name || '';
+  }
+}
+
+async function analyseReturn() {
+  const customer = document.getElementById('rg-customer').value.trim() || 'Unknown Customer';
+  const order = document.getElementById('rg-order').value.trim() || '';
+  const reason = document.getElementById('rg-reason').value.trim();
+  const staff = document.getElementById('rg-staff').value.trim();
+
+  if (!reason) { showToast('Please enter a return reason before analysing.'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/return-guard/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer, order_ref: order, reason_text: reason, staff_note: staff }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || 'Analysis failed');
+
+    // Severity styling
+    const sevStyle = d.severity === 'HIGH' ? 'bg-red-100 text-red-700'
+      : d.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700'
+      : 'bg-slate-100 text-slate-600';
+
+    const categoryLabel = (d.issue_category || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const resultHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="text-center p-4 rounded bg-slate-50 border border-slate-100">
+          <p class="text-xs text-slate-400 uppercase font-bold mb-1">Issue Category</p>
+          <span class="text-sm font-black px-3 py-1 rounded-sm ${sevStyle}">${categoryLabel}</span>
+        </div>
+        <div class="text-center p-4 rounded bg-slate-50 border border-slate-100">
+          <p class="text-xs text-slate-400 uppercase font-bold mb-1">Severity</p>
+          <p class="text-lg font-black ${d.severity === 'HIGH' ? 'text-red-500' : d.severity === 'MEDIUM' ? 'text-amber-500' : 'text-slate-500'}">${d.severity}</p>
+        </div>
+        <div class="text-center p-4 rounded bg-slate-50 border border-slate-100">
+          <p class="text-xs text-slate-400 uppercase font-bold mb-1">Confidence</p>
+          <p class="text-lg font-black text-builtinCyan">${Math.round(d.confidence * 100)}%</p>
+        </div>
+      </div>
+      ${d.ai_summary ? `<div class="bg-blue-50 border border-blue-100 rounded p-4 mb-4">
+        <p class="text-xs font-bold text-blue-600 uppercase mb-1"><i class="fas fa-robot mr-1"></i>AI Summary <span class="text-[9px] bg-blue-100 px-1 rounded">${d.ai_source}</span></p>
+        <p class="text-sm text-slate-700">${d.ai_summary}</p>
+      </div>` : ''}
+      <div class="bg-green-50 border border-green-100 rounded p-4">
+        <p class="text-xs font-bold text-green-700 uppercase mb-1"><i class="fas fa-check-circle mr-1"></i>Recommended Action</p>
+        <p class="text-sm text-slate-700 font-semibold">${d.suggested_action}</p>
+      </div>
+      ${d.matched_keywords && d.matched_keywords.length ? `<p class="text-xs text-slate-400 mt-3">Keywords detected: ${d.matched_keywords.map(k => `<span class='bg-slate-100 px-1 rounded'>${k}</span>`).join(' ')}</p>` : ''}
+    `;
+
+    const resultEl = document.getElementById('rg-result');
+    document.getElementById('rg-result-body').innerHTML = resultHTML;
+    resultEl.classList.remove('hidden');
+
+    // Add to session history
+    _rgHistory.unshift({ customer, order, category: categoryLabel, severity: d.severity, action: d.suggested_action });
+    const historyEl = document.getElementById('rg-history');
+    historyEl.innerHTML = _rgHistory.map(h => `
+      <div class="bg-white border border-slate-100 rounded p-3 shadow-sm flex items-center justify-between gap-4">
+        <div>
+          <p class="font-bold text-sm text-builtinBlue">${h.customer} ${h.order ? '— ' + h.order : ''}</p>
+          <p class="text-xs text-slate-500 mt-1">${h.action}</p>
+        </div>
+        <span class="text-[10px] font-bold px-2 py-1 rounded ${h.severity === 'HIGH' ? 'bg-red-100 text-red-600' : h.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}">${h.severity} • ${h.category}</span>
+      </div>`).join('');
+
+    showToast(`Return analysed: ${categoryLabel} (${d.severity})`);
+  } catch (e) {
+    showToast('Analysis failed: ' + e.message);
+  }
+}
+
+function switchTab(evt, tabId) {
+  const contents = document.getElementsByClassName('tab-content');
+  for (let i = 0; i < contents.length; i++) contents[i].classList.remove('active');
+  const tabs = evt.currentTarget.parentNode.getElementsByTagName('button');
+  for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove('tab-active');
+  document.getElementById(tabId).classList.add('active');
+  evt.currentTarget.classList.add('tab-active');
+}
+
+function logout() {
+  localStorage.removeItem('stewardLoggedIn');
+  localStorage.removeItem('stewardName');
+  window.location.href = 'login.html';
+}
+
+function showView(view) {
+  document.getElementById('view-dashboard').style.display = view === 'dashboard' ? '' : 'none';
+  document.getElementById('view-suppliers').style.display = view === 'suppliers' ? '' : 'none';
+  document.getElementById('view-reports').style.display = view === 'reports' ? '' : 'none';
+  document.querySelectorAll('.nav-link').forEach(a => {
+    a.classList.toggle('text-builtinCyan', a.dataset.view === view);
+  });
+
+  if (view === 'dashboard') {
+    loadDashboardSummary();
+    loadPendingActions();
+    autoScanIfDue(false);
+  }
+  if (view === 'suppliers') loadSuppliers();
+  if (view === 'reports') loadReports();
+}
+
+async function loadSuppliers() {
+  const container = document.getElementById('suppliers-container');
+  try {
+    const res = await fetch(`${API_BASE}/suppliers`);
+    const data = await res.json();
+    if (!data.length) {
+      container.innerHTML = "<p class='text-slate-400 text-center p-8'>No suppliers found.</p>";
+      return;
+    }
+
+    container.innerHTML = data.map(s => {
+      const riskColor = s.risk_score >= 70 ? 'text-red-500' : s.risk_score >= 40 ? 'text-amber-500' : 'text-builtinCyan';
+      return `
+        <div class="border border-slate-100 p-6 rounded-sm bg-white shadow-sm flex items-center justify-between hover:border-builtinCyan transition">
+          <div class="flex gap-6 items-center">
+            <div class="w-12 h-12 bg-builtinBlue rounded flex items-center justify-center text-white font-black text-lg">${s.supplier_name.charAt(0)}</div>
+            <div>
+              <h4 class="font-bold text-lg text-builtinBlue">${s.supplier_name}</h4>
+              <p class="text-xs text-slate-400">${s.contact_email}</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 gap-8 text-center">
+            <div><p class="text-xs text-slate-400 uppercase font-bold">Items</p><p class="font-bold text-slate-700">${s.item_count}</p></div>
+            <div><p class="text-xs text-slate-400 uppercase font-bold">Lead Time</p><p class="font-bold text-slate-700">${s.lead_time}d</p></div>
+            <div><p class="text-xs text-slate-400 uppercase font-bold">Risk</p><p class="font-bold ${riskColor}">${s.risk_score}</p></div>
+            <div><p class="text-xs text-slate-400 uppercase font-bold">Pending Alerts</p><p class="font-bold text-builtinBlue">${s.pending_alerts || 0}</p></div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = "<p class='text-red-500 text-center p-8'>Failed to load suppliers. Make sure backend is running.</p>";
+  }
+}
+
+let stockChartInstance = null;
+
+async function loadReports() {
+  try {
+    const [res, impactRes] = await Promise.all([
+      fetch(`${API_BASE}/reports/summary`),
+      fetch(`${API_BASE}/impact-metrics`),
+    ]);
+    const data = await res.json();
+    const impact = impactRes.ok ? await impactRes.json() : {};
+
+    const statsEl = document.getElementById('report-stats');
+    const cards = [
+      { label: 'Total SKUs', value: data.total_skus, color: 'text-builtinBlue' },
+      { label: 'Low Stock', value: data.low_stock, color: 'text-red-500' },
+      { label: 'Slow Moving', value: data.slow_moving, color: 'text-amber-500' },
+      { label: 'Suppliers', value: data.supplier_count, color: 'text-builtinCyan' },
+      { label: 'Pending Actions', value: data.pending_actions, color: 'text-builtinBlue' },
+      { label: 'Approved Actions', value: data.approved_actions, color: 'text-green-600' },
+      { label: 'Rejected Actions', value: data.rejected_actions, color: 'text-rose-600' },
+      { label: 'Sent Notifications', value: data.sent_notifications, color: 'text-teal-600' },
+    ];
+
+    statsEl.innerHTML = cards.map(c => `
+      <div class="bg-white border border-slate-100 p-6 rounded shadow-sm text-center">
+        <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">${c.label}</p>
+        <p class="text-4xl font-black ${c.color}">${c.value ?? 0}</p>
+      </div>`).join('');
+
+    // Decision Impact Metrics section
+    const impactEl = document.getElementById('impact-metrics');
+    if (impactEl && Object.keys(impact).length) {
+      const impactCards = [
+        { label: 'High Priority Actions', value: impact.high_priority_actions ?? 0, icon: 'fa-exclamation-triangle', color: 'text-red-500' },
+        { label: 'Stockouts Prevented', value: impact.stockouts_prevented ?? 0, icon: 'fa-shield-alt', color: 'text-green-600' },
+        { label: 'Slow-Moving Flagged', value: impact.slow_moving_flagged ?? 0, icon: 'fa-box', color: 'text-amber-500' },
+        { label: 'Notifications Automated', value: impact.notifications_automated ?? 0, icon: 'fa-envelope', color: 'text-builtinCyan' },
+        { label: 'Capital at Risk ($)', value: '$' + (impact.capital_at_risk ?? 0).toLocaleString(), icon: 'fa-dollar-sign', color: 'text-rose-500' },
+        { label: 'Est. Hours Saved', value: (impact.estimated_time_saved_hours ?? 0) + 'h', icon: 'fa-clock', color: 'text-builtinBlue' },
+      ];
+      impactEl.innerHTML = impactCards.map(c => `
+        <div class="bg-white border border-slate-100 p-5 rounded shadow-sm text-center">
+          <i class="fas ${c.icon} ${c.color} mb-2 text-lg"></i>
+          <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">${c.label}</p>
+          <p class="text-3xl font-black ${c.color}">${c.value}</p>
+        </div>`).join('');
+    }
+
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    if (stockChartInstance) stockChartInstance.destroy();
+    stockChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.chart_data.map(i => i.sku),
+        datasets: [{
+          label: 'Stock Units',
+          data: data.chart_data.map(i => i.stock),
+          backgroundColor: data.chart_data.map(i => i.stock < 20 ? '#ef4444' : i.stock < 50 ? '#f59e0b' : '#00c4cc'),
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+  } catch (e) {
+    document.getElementById('report-stats').innerHTML = "<p class='text-red-500 col-span-4 text-center p-8'>Failed to load report.</p>";
+  }
+}
+
+window.onload = async () => {
+  await loadInventoryFromDB();
+  await autoScanIfDue(true);
+  await loadDashboardSummary();
+  await loadPendingActions();
+  await loadReturnOrders(false);
+
+  // Optional periodic refresh to reduce manual refresh clicks.
+  setInterval(async () => {
+    try {
+      await loadDashboardSummary();
+      await loadPendingActions();
+      if (document.getElementById('view-reports').style.display !== 'none') {
+        await loadReports();
+      }
+      await autoScanIfDue(false);
+    } catch (e) {
+      // Keep silent for background refresh.
+    }
+  }, AUTO_REFRESH_MS);
 };
     </script>
+    <script src="js/data.js"></script>
   </body>
 </html>
