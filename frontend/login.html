@@ -128,6 +128,7 @@
                 const result = await response.json();
                 if (response.ok) {
                     localStorage.setItem('stewardName', result.username);
+                    localStorage.setItem('stewardLoggedIn', '1');
                     window.location.href = "index.html";
                 } else {
                     errorBox.innerText = result.detail || "Login failed.";
