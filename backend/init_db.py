@@ -70,7 +70,7 @@ def init_database():
         password TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-
+    """)
     # 订单表（用于 Return Guard 选择真实订单号）
     cursor.execute(
         """
@@ -82,8 +82,6 @@ def init_database():
         item_name TEXT,
         order_status TEXT DEFAULT 'delivered',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """
     )
     """
     )
