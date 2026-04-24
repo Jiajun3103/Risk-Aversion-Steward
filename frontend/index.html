@@ -28,8 +28,6 @@
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       .modal-backdrop { background: rgba(0, 23, 61, 0.8); backdrop-filter: blur(4px); }
       .inventory-card { transition: all 0.3s ease; }
-      
-      /* 自定义搜索下拉列表滚动条 */
       #sku-dropdown-results::-webkit-scrollbar { width: 4px; }
       #sku-dropdown-results::-webkit-scrollbar-thumb { background: #00c4cc; border-radius: 10px; }
     </style>
@@ -42,155 +40,189 @@
         <span class="font-bold tracking-tight text-lg">Inventory Steward</span>
       </div>
       <div class="flex gap-8 text-sm font-semibold uppercase tracking-wider items-center">
-        <a href="#" class="hover:text-builtinCyan">Dashboard</a>
+        <a href="#" onclick="showView('dashboard')" class="nav-link text-builtinCyan hover:text-builtinCyan">Dashboard</a>
+        <a href="#" onclick="showView('suppliers')" class="nav-link hover:text-builtinCyan">Suppliers</a>
         <button onclick="localStorage.clear(); window.location.href='login.html'" class="bg-builtinCyan hover:bg-builtinDarkCyan text-white px-4 py-2 rounded-sm transition text-xs text-nowrap">LOG OUT</button>
       </div>
     </nav>
 
-    <!-- Hero Section -->
-    <div class="hero-gradient text-white py-20 px-8">
-      <div class="hero-dots">
-        <script>for (let i = 0; i < 50; i++) document.write('<div class="dot"></div>');</script>
-      </div>
-      <div class="max-w-6xl mx-auto relative z-10">
-        <h4 class="text-builtinCyan font-bold uppercase tracking-[0.2em] mb-4 text-xs">AI-Driven Risk Trends</h4>
-        <h1 class="text-6xl font-black mb-6 leading-tight">Control. Grow.<br />Protect your capital.</h1>
-      </div>
-    </div>
-
-    <!-- 快速操作栏 (重点修改：支持搜索的产品选择) -->
-    <section class="max-w-6xl mx-auto -mt-6 relative z-30 px-4 mb-12">
-        <div class="bg-white p-6 rounded-sm shadow-xl border border-slate-100 flex flex-col md:flex-row gap-6 items-end">
-            <div class="flex-1 w-full relative">
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Select Product (Searchable)</label>
-                <!-- 搜索输入框 -->
-                <input type="text" id="action-sku-search" onfocus="toggleSkuDropdown(true)" oninput="filterActionSku()" placeholder="Type to search product..." autocomplete="off" class="w-full border-b-2 border-slate-100 py-3 outline-none focus:border-builtinCyan text-sm font-bold bg-transparent">
-                <!-- 隐藏的真实 SKU 值存储 -->
-                <input type="hidden" id="action-sku" value="">
-                <!-- 下拉搜索结果 -->
-                <div id="sku-dropdown-results" class="absolute z-50 w-full bg-white border border-slate-100 shadow-2xl rounded-sm mt-1 max-h-60 overflow-y-auto hidden">
-                    <!-- 动态生成的选项 -->
-                </div>
-            </div>
-            <div class="w-full md:w-32">
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Quantity</label>
-                <input type="number" id="action-qty" value="1" min="1" class="w-full border-b-2 border-slate-100 py-3 outline-none focus:border-builtinCyan text-sm font-bold">
-            </div>
-            <div class="flex gap-2 w-full md:w-auto">
-                <button onclick="submitStockMove('OUT')" class="flex-1 md:flex-none bg-orange-500 text-white px-6 py-4 font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition shadow-lg shadow-orange-100 text-nowrap">Record Sale (OUT)</button>
-                <button onclick="submitStockMove('IN')" class="flex-1 md:flex-none bg-green-600 text-white px-6 py-4 font-black text-[10px] uppercase tracking-widest hover:bg-green-700 transition shadow-lg shadow-green-100 text-nowrap">Restock (IN)</button>
-            </div>
-        </div>
-    </section>
-
-    <main class="max-w-6xl mx-auto relative z-20 pb-20">
-      <!-- Tab Switcher -->
-      <div class="bg-white shadow-2xl rounded-sm p-2 flex flex-col md:flex-row items-stretch border-b border-slate-100">
-        <div class="flex-1 grid grid-cols-5">
-          <button onclick="switchTab(event, 'tab-stockout')" class="tab-active py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
-            <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-            <span class="text-[9px] uppercase">Alerts</span>
-          </button>
-          <button onclick="switchTab(event, 'tab-prediction')" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
-            <i class="fa-solid fa-brain text-xl"></i>
-            <span class="text-[9px] uppercase">AI Predict</span>
-          </button>
-          <button onclick="switchTab(event, 'tab-reports'); loadReports();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
-            <i class="fa-solid fa-chart-line text-xl"></i>
-            <span class="text-[9px] uppercase">Reports</span>
-          </button>
-          <button onclick="switchTab(event, 'tab-procurement'); loadProcurementSuggestions();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
-            <i class="fa-solid fa-cart-shopping text-xl"></i>
-            <span class="text-[9px] uppercase">Sourcing</span>
-          </button>
-          <button onclick="switchTab(event, 'tab-suppliers'); loadSuppliers();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
-            <i class="fa-solid fa-truck-fast text-xl"></i>
-            <span class="text-[9px] uppercase">Suppliers</span>
-          </button>
-        </div>
-        <div onclick="runFullScan()" class="bg-builtinCyan text-white p-6 flex items-center justify-center font-bold uppercase text-[10px] tracking-[0.2em] cursor-pointer hover:bg-builtinDarkCyan transition">
-          <i class="fa-solid fa-bolt mr-2 animate-pulse"></i> Live Risk Scan
+    <div id="view-dashboard">
+      <!-- Hero Section -->
+      <div class="hero-gradient text-white py-20 px-8">
+        <div class="hero-dots"><script>for (let i = 0; i < 50; i++) document.write('<div class="dot"></div>');</script></div>
+        <div class="max-w-6xl mx-auto relative z-10">
+          <h4 class="text-builtinCyan font-bold uppercase tracking-[0.2em] mb-4 text-xs">AI-Driven Risk Trends</h4>
+          <h1 class="text-6xl font-black mb-6 leading-tight">Control. Grow.<br />Protect your capital.</h1>
         </div>
       </div>
 
-      <!-- Tab 1: Stockout & Search (Main List) -->
-      <div id="tab-stockout" class="tab-content active mt-8 px-4">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h3 class="text-2xl font-extrabold text-builtinBlue">15-Day Stockout Forecast</h3>
-          <div class="flex items-center gap-4 bg-white p-2 rounded shadow-sm border border-slate-100">
-            <i class="fa-solid fa-magnifying-glass text-slate-300 ml-2"></i>
-            <input type="text" id="skuSearch" onkeyup="filterInventory()" placeholder="Search SKU or Name..." class="outline-none py-1 text-sm w-64">
-            <label class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase border-l pl-4 cursor-pointer">
-                <input type="checkbox" id="urgentFilter" onchange="filterInventory()" class="accent-builtinCyan"> Only Urgent
-            </label>
+      <!-- Quick Action Bar -->
+      <section class="max-w-6xl mx-auto -mt-6 relative z-30 px-4 mb-12">
+          <div class="bg-white p-6 rounded-sm shadow-xl border border-slate-100 flex flex-col md:flex-row gap-6 items-end">
+              <div class="flex-1 w-full relative">
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Select Product (Searchable)</label>
+                  <input type="text" id="action-sku-search" onfocus="toggleSkuDropdown(true)" oninput="filterActionSku()" placeholder="Type to search product..." autocomplete="off" class="w-full border-b-2 border-slate-100 py-3 outline-none focus:border-builtinCyan text-sm font-bold bg-transparent">
+                  <input type="hidden" id="action-sku" value="">
+                  <div id="sku-dropdown-results" class="absolute z-50 w-full bg-white border border-slate-100 shadow-2xl rounded-sm mt-1 max-h-60 overflow-y-auto hidden"></div>
+              </div>
+              <div class="w-full md:w-32">
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Quantity</label>
+                  <input type="number" id="action-qty" value="1" min="1" class="w-full border-b-2 border-slate-100 py-3 outline-none focus:border-builtinCyan text-sm font-bold">
+              </div>
+              <div class="flex gap-2 w-full md:w-auto">
+                  <button onclick="submitStockMove('OUT')" class="flex-1 md:flex-none bg-orange-500 text-white px-6 py-4 font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition shadow-lg shadow-orange-100 text-nowrap">Record Sale (OUT)</button>
+                  <button onclick="submitStockMove('IN')" class="flex-1 md:flex-none bg-green-600 text-white px-6 py-4 font-black text-[10px] uppercase tracking-widest hover:bg-green-700 transition shadow-lg shadow-green-100 text-nowrap">Restock (IN)</button>
+              </div>
+          </div>
+      </section>
+
+      <main class="max-w-6xl mx-auto relative z-20 pb-20">
+        <div class="bg-white shadow-2xl rounded-sm p-2 flex flex-col md:flex-row items-stretch border-b border-slate-100">
+          <div class="flex-1 grid grid-cols-5">
+            <button onclick="switchTab(event, 'tab-stockout')" class="tab-active py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
+              <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+              <span class="text-[9px] uppercase">Alerts</span>
+            </button>
+            <button onclick="switchTab(event, 'tab-clearance')" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
+              <i class="fa-solid fa-wand-sparkles text-xl"></i>
+              <span class="text-[9px] uppercase">AI Clearance</span>
+            </button>
+            <button onclick="switchTab(event, 'tab-reports'); loadReports();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
+              <i class="fa-solid fa-chart-line text-xl"></i>
+              <span class="text-[9px] uppercase">Reports</span>
+            </button>
+            <button onclick="switchTab(event, 'tab-procurement'); loadProcurementSuggestions();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
+              <i class="fa-solid fa-cart-shopping text-xl"></i>
+              <span class="text-[9px] uppercase">Sourcing</span>
+            </button>
+            <button onclick="switchTab(event, 'tab-sales-scanner')" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
+              <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+              <span class="text-[9px] uppercase">Scanner</span>
+            </button>
+          </div>
+          
+          <div onclick="runFullScan()" class="bg-builtinCyan text-white p-6 flex items-center justify-center font-bold uppercase text-[10px] tracking-[0.2em] cursor-pointer hover:bg-builtinDarkCyan transition">
+            <i class="fa-solid fa-bolt mr-2 animate-pulse"></i> Live Risk Scan
+          </div>
+        </div> 
+
+        <!-- Tab 1: Stockout -->
+        <div id="tab-stockout" class="tab-content active mt-8 px-4">
+          <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h3 class="text-2xl font-extrabold text-builtinBlue">15-Day Stockout Forecast</h3>
+            <div class="flex items-center gap-4 bg-white p-2 rounded shadow-sm border border-slate-100">
+              <i class="fa-solid fa-magnifying-glass text-slate-300 ml-2"></i>
+              <input type="text" id="skuSearch" onkeyup="filterInventory()" placeholder="Search SKU or Name..." class="outline-none py-1 text-sm w-64">
+              <label class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase border-l pl-4 cursor-pointer">
+                  <input type="checkbox" id="urgentFilter" onchange="filterInventory()" class="accent-builtinCyan"> Only Urgent
+              </label>
+            </div>
+          </div>
+          <div class="grid gap-4" id="stockout-container"></div>
+        </div>
+
+        <!-- Tab 2: AI Clearance (替换了之前的 Prediction) -->
+        <div id="tab-clearance" class="tab-content mt-8 px-4">
+          <div class="mb-8 flex justify-between items-center italic">
+            <div>
+              <h3 class="text-2xl font-extrabold text-builtinBlue">AI Clearance Strategy</h3>
+              <p class="text-slate-400 text-sm">Powered by ilmu-glm-5.1 • Real-time liquidation analysis</p>
+            </div>
+            <button onclick="runAIRecommend()" class="bg-builtinCyan text-white px-6 py-3 font-black text-xs uppercase hover:bg-builtinDarkCyan transition">Generate Strategy</button>
+          </div>
+          <div id="ai-clearance-result" class="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[200px]">
+              <p class="col-span-2 text-center text-slate-400 py-12">Click the button to generate 2 specific clearance plans.</p>
           </div>
         </div>
-        <div class="grid gap-4" id="stockout-container"></div>
-      </div>
 
-      <!-- Tab 2: Prediction -->
-      <div id="tab-prediction" class="tab-content mt-8 px-4">
-        <div class="mb-8 flex justify-between items-center italic">
-          <h3 class="text-2xl font-extrabold text-builtinBlue">AI Sales Predictor (ilmu-glm-5.1)</h3>
-          <button onclick="runAIPrediction()" class="bg-builtinCyan text-white px-6 py-3 font-black text-xs uppercase hover:bg-builtinDarkCyan transition">Ask AI to Predict</button>
+        <!-- Tab 3: Reports (Dashboard 内部) -->
+        <div id="tab-reports" class="tab-content mt-8 px-4">
+          <div class="mb-8 flex justify-between items-center">
+              <h3 class="text-2xl font-extrabold text-builtinBlue">Transaction Logs</h3>
+              
+              <!-- 🌟 在这里新增 Export CSV 按钮 🌟 -->
+              <button onclick="exportReportToCSV()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-sm font-bold text-[10px] uppercase transition shadow-sm">
+                  <i class="fa-solid fa-download mr-2"></i> Export CSV
+              </button>
+
+          </div>
+          <div class="bg-white border border-slate-100 rounded overflow-hidden shadow-sm">
+            <table class="w-full text-left">
+              <thead class="bg-slate-50 text-[10px] font-bold uppercase text-slate-400">
+                <tr>
+                    <th class="p-4">Time</th>
+                    <th class="p-4">Product / SKU</th>
+                    <th class="p-4">Type</th>
+                    <th class="p-4 text-right">Qty</th>
+                    <th class="p-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="report-container-dashboard" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
         </div>
-        <div id="ai-prediction-result" class="bg-white border border-slate-200 p-8 rounded shadow-inner text-slate-700 leading-relaxed min-h-[200px]">
-            <p class="text-center text-slate-400 py-12">Click the button to run AI analysis.</p>
+
+        <!-- Tab 4: Procurement Suggestions -->
+        <div id="tab-procurement" class="tab-content mt-8 px-4">
+          <div class="mb-8"><h3 class="text-2xl font-extrabold text-builtinBlue">Smart Sourcing List</h3></div>
+          <div id="procurement-container" class="bg-white rounded border border-slate-100 divide-y divide-slate-50 shadow-sm"></div>
         </div>
-      </div>
 
-      <!-- Tab 3: Reports -->
-      <div id="tab-reports" class="tab-content mt-8 px-4">
-        <div class="mb-8 flex justify-between items-center">
-            <h3 class="text-2xl font-extrabold text-builtinBlue">Recent Transactions</h3>
-            <button onclick="exportReportToCSV()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-sm font-bold text-[10px] uppercase transition">
-                <i class="fa-solid fa-download mr-2"></i> Export CSV
-            </button>
+          <!-- Tab 5: Sales Scanner (出货扫描仪) -->
+        <div id="tab-sales-scanner" class="tab-content mt-8 px-4">
+          <div class="mb-8 flex justify-between items-center">
+            <div>
+              <h3 class="text-2xl font-extrabold text-builtinBlue uppercase italic">AI Sales Scanner</h3>
+              <p class="text-slate-400 text-sm">Upload Invoice (PDF/Word/Excel) to auto-deduct stock levels.</p>
+            </div>
+          </div>
+
+          <!-- 上传区域 -->
+          <div class="bg-white p-12 border-2 border-dashed border-slate-200 rounded-sm text-center hover:border-builtinCyan transition group relative">
+            <input type="file" id="invoiceFile" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleInvoiceUpload()">
+            <div class="pointer-events-none">
+              <i class="fa-solid fa-cloud-arrow-up text-5xl text-slate-200 group-hover:text-builtinCyan mb-4 transition"></i>
+              <p class="font-black text-slate-600 uppercase tracking-widest text-sm">Drop Invoice Here or Click to Upload</p>
+              <p class="text-[10px] text-slate-400 mt-2">SUPPORTED: PDF, XLSX, DOCX</p>
+            </div>
+          </div>
+
+          <!-- 分析结果预览 (默认隐藏) -->
+          <div id="scanner-preview" class="mt-12 hidden">
+            <div class="flex justify-between items-end mb-4 border-b-2 border-slate-100 pb-4">
+              <h4 class="font-black text-xs uppercase tracking-[0.2em] text-slate-400">Items Detected by ILMU AI</h4>
+              <button onclick="confirmBulkOutbound()" class="bg-orange-500 text-white px-8 py-3 font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition shadow-lg shadow-orange-100">
+                Confirm & Execute Outbound
+              </button>
+            </div>
+            <div id="scanner-items-list" class="grid gap-4">
+              <!-- AI 识别出的产品会在这里显示 -->
+            </div>
+          </div>
         </div>
-        <div class="bg-white border border-slate-100 rounded overflow-hidden shadow-sm">
-          <table class="w-full text-left">
-            <thead class="bg-slate-50 text-[10px] font-bold uppercase text-slate-400">
-              <tr>
-                <th class="p-4">Timestamp</th>
-                <th class="p-4">Product / SKU</th>
-                <th class="p-4">Type</th>
-                <th class="p-4 text-right">Quantity</th>
-                <th class="p-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="report-container" class="divide-y divide-slate-100 text-sm"></tbody>
-          </table>
-        </div>
+
+        </main>
       </div>
 
-      <!-- Tab 4: Procurement Suggestions -->
-      <div id="tab-procurement" class="tab-content mt-8 px-4">
-        <div class="mb-8"><h3 class="text-2xl font-extrabold text-builtinBlue">Smart Sourcing List</h3></div>
-        <div id="procurement-container" class="bg-white rounded border border-slate-100 divide-y divide-slate-50 shadow-sm"></div>
+    <!-- Suppliers View -->
+    <!-- 🌟 Suppliers 视图开始 (现在它是 Dashboard 的平级兄弟了) 🌟 -->
+    <div id="view-suppliers" style="display:none" class="max-w-6xl mx-auto py-16 px-8">
+      <div class="mb-8"><h3 class="text-2xl font-extrabold text-builtinBlue">Supply Chain Health</h3></div>
+      <div id="supplier-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <!-- 数据会加载到这里 -->
       </div>
-
-      <!-- Tab 5: Supplier Dashboard -->
-      <div id="tab-suppliers" class="tab-content mt-8 px-4">
-        <div class="mb-8"><h3 class="text-2xl font-extrabold text-builtinBlue">Supply Chain Health</h3></div>
-        <div id="supplier-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-      </div>
-
-      <div id="tab-return" class="tab-content mt-8 px-4"><p class="text-slate-400 italic">Return Guard Active.</p></div>
-    </main>
+    </div>
 
     <!-- RISK DETAIL MODAL -->
     <div id="riskModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 modal-backdrop" onclick="closeRiskModal()"></div>
-        <div class="bg-white w-full max-w-lg rounded-sm shadow-2xl relative z-10 overflow-hidden animate-in zoom-in duration-200">
+        <div class="bg-white w-full max-w-lg rounded-sm shadow-2xl relative z-10 overflow-hidden">
             <div class="bg-builtinBlue p-6 text-white flex justify-between items-center">
-                <div>
-                    <h3 id="modalProductName" class="text-xl font-black uppercase tracking-tight tracking-tight">Risk Analysis</h3>
-                    <p id="modalSKU" class="text-builtinCyan text-[10px] font-bold tracking-[0.2em] mt-1">SKU-0000</p>
-                </div>
+                <div><h3 id="modalProductName" class="text-xl font-black uppercase tracking-tight">Risk Analysis</h3><p id="modalSKU" class="text-builtinCyan text-[10px] font-bold tracking-[0.2em] mt-1">SKU-0000</p></div>
                 <button onclick="closeRiskModal()" class="text-white/50 hover:text-white transition text-2xl">&times;</button>
             </div>
             <div class="p-8">
-                <div id="riskAnalysisContent" class="text-slate-700 text-sm italic border-l-4 border-builtinCyan pl-4 mb-6 leading-relaxed"></div>
+                <div id="riskAnalysisContent" class="text-slate-700 text-sm leading-relaxed mb-6"></div>
                 <div class="bg-slate-50 p-4 border border-slate-100 rounded-sm flex items-end gap-4">
                     <div class="flex-1">
                         <label class="text-[9px] font-black text-slate-400 uppercase block mb-1">Quick Restock Amount</label>
@@ -202,16 +234,46 @@
         </div>
     </div>
 
-    <script>
-      const API_BASE = "http://127.0.0.1:8000/api";
-      let allProducts = []; // 存储所有产品数据供搜索使用
+    <!-- 🌟 新增：全系统扫描弹窗 (LIVE SCAN MODAL) 🌟 -->
+    <div id="scanModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeScanModal()"></div>
+        <div class="bg-white w-full max-w-md rounded-sm shadow-2xl relative z-10 overflow-hidden">
+            <div class="bg-builtinBlue p-6 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-black uppercase tracking-tight">
+                        <i class="fa-solid fa-radar mr-2"></i> System Health Scan
+                    </h3>
+                </div>
+                <button onclick="closeScanModal()" class="text-white/50 hover:text-white transition text-2xl">&times;</button>
+            </div>
+            <div id="scanModalContent" class="p-8 text-center min-h-[250px] flex flex-col justify-center">
+                <!-- 内容由 JS 动态生成 -->
+            </div>
+        </div>
+    </div>
 
-      // 1. 加载库存 & 初始化产品数据
+    <!-- 引用外部的 app.js -->
+    <!-- <script src="js/app.js"></script> -->
+
+   <script> 
+      const API_BASE = "http://127.0.0.1:8000/api";
+      let allProducts = [];
+
+      // 1. 数据格式化辅助
+      function formatAIResponse(text) {
+          if (!text) return "No analysis available.";
+          return text
+              .replace(/\n/g, '<br>')
+              .replace(/\*\*(.*?)\*\*/g, '<b class="text-builtinBlue font-bold">$1</b>') 
+              .replace(/- (.*?)(<br>|$)/g, '<li class="ml-4 list-disc text-slate-600">$1</li>'); 
+      }
+
+      // 2. 加载库存
       async function loadInventory() {
         try {
           const res = await fetch(`${API_BASE}/inventory`);
           const data = await res.json();
-          allProducts = data; // 保存全局变量
+          allProducts = data;
           
           const container = document.getElementById("stockout-container");
           container.innerHTML = data.map(item => {
@@ -232,18 +294,15 @@
                 <button onclick="viewRisk('${item.sku}', '${item.name}')" class="bg-builtinBlue text-white px-4 py-2 text-[10px] font-black uppercase transition hover:bg-builtinDarkCyan">View Risk</button>
               </div>`;
           }).join("");
-          
-          // 初始填充可搜索下拉列表
           renderActionSkuResults(data);
-          return data;
         } catch (e) { console.error(e); }
       }
 
-      // --- 可搜索下拉框逻辑 (NEW) ---
+      // 3. 搜索下拉逻辑
       function toggleSkuDropdown(show) {
           const results = document.getElementById('sku-dropdown-results');
           if (show) results.classList.remove('hidden');
-          else setTimeout(() => results.classList.add('hidden'), 200); // 延时防止点击失效
+          else setTimeout(() => results.classList.add('hidden'), 250); 
       }
 
       function filterActionSku() {
@@ -254,16 +313,12 @@
 
       function renderActionSkuResults(products) {
           const results = document.getElementById('sku-dropdown-results');
-          if (products.length === 0) {
-              results.innerHTML = `<div class="p-4 text-xs text-slate-400">No products found</div>`;
-              return;
-          }
-          results.innerHTML = products.map(p => `
+          results.innerHTML = products.length === 0 ? `<div class="p-4 text-xs text-slate-400">No products found</div>` :
+              products.map(p => `
               <div onclick="selectActionSku('${p.sku}', '${p.name}')" class="p-4 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 transition text-sm">
                   <p class="font-bold text-builtinBlue">${p.name}</p>
                   <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">${p.sku}</p>
-              </div>
-          `).join("");
+              </div>`).join("");
       }
 
       function selectActionSku(sku, name) {
@@ -275,133 +330,63 @@
       function closeAllDropdowns(e) {
           const dropdown = document.getElementById('sku-dropdown-results');
           const input = document.getElementById('action-sku-search');
-          if (e.target !== dropdown && e.target !== input) {
-              toggleSkuDropdown(false);
-          }
+          if (e.target !== dropdown && e.target !== input) toggleSkuDropdown(false);
       }
 
-      // 功能：全局列表过滤
-      function filterInventory() {
-        const term = document.getElementById("skuSearch").value.toLowerCase();
-        const urgent = document.getElementById("urgentFilter").checked;
-        document.querySelectorAll(".inventory-card").forEach(card => {
-          const matches = card.dataset.sku.includes(term) || card.dataset.name.includes(term);
-          const isUrgentMatch = urgent ? card.dataset.urgent === "true" : true;
-          card.style.display = (matches && isUrgentMatch) ? "flex" : "none";
-        });
-      }
-
-      // 功能：导出 CSV
-      function exportReportToCSV() {
-          const table = document.getElementById("report-container");
-          const rows = table.querySelectorAll("tr");
-          if (rows.length === 0 || rows[0].innerText.includes("No history")) { alert("No data"); return; }
-          let csv = "data:text/csv;charset=utf-8,Time,Product,Type,Qty\n";
-          rows.forEach(r => csv += Array.from(r.querySelectorAll("td")).slice(0,4).map(c => c.innerText.replace(/\n/g," ")).join(",") + "\n");
-          const link = document.createElement("a");
-          link.setAttribute("href", encodeURI(csv));
-          link.setAttribute("download", `Report_${new Date().toLocaleDateString()}.csv`);
-          document.body.appendChild(link); link.click(); document.body.removeChild(link);
-      }
-
-      // 功能：Live Risk Scan
-      async function runFullScan() {
-          const data = await loadInventory();
-          const riskCount = data.filter(i => (i.daily_sales > 0 ? i.stock/i.daily_sales : 999) <= 15).length;
-          alert(`Scan: ${data.length} SKUs checked. ${riskCount} Risks found. Running AI...`);
-          switchTab({currentTarget: document.querySelector('button[onclick*="tab-prediction"]')}, 'tab-prediction');
-          runAIPrediction();
-      }
-
-      // 功能：供应商看板
-      async function loadSuppliers() {
-        try {
-          const res = await fetch(`${API_BASE}/suppliers`);
-          const data = await res.json();
-          document.getElementById('supplier-container').innerHTML = data.map(s => `
-            <div class="bg-white p-6 border border-slate-100 shadow-sm flex justify-between items-center">
-                <div><p class="font-black text-builtinBlue">${s.supplier_name}</p><p class="text-[10px] text-slate-400 uppercase mt-1">Lead Time: ${s.lead_time} Days</p></div>
-                <div class="text-right">
-                    <p class="text-xl font-black ${s.risk_score > 70 ? 'text-red-500':'text-builtinCyan'}">${s.risk_score}</p>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Risk Score</p>
-                </div>
-            </div>
-          `).join("");
-        } catch(e) {}
-      }
-
-      // 功能：智能采购建议
-      async function loadProcurementSuggestions() {
-          try {
-              const res = await fetch(`${API_BASE}/inventory`);
-              const data = await res.json();
-              const container = document.getElementById('procurement-container');
-              const list = data.filter(i => i.stock < (i.daily_sales * 15));
-              container.innerHTML = list.length === 0 ? "<p class='p-8 text-center text-slate-400'>All stock levels optimal.</p>" :
-                  list.map(i => `
-                    <div class="flex items-center justify-between p-6 hover:bg-slate-50 transition">
-                        <div>
-                            <p class="font-bold text-builtinBlue">${i.name}</p>
-                            <p class="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1">Suggested PO: ${Math.ceil(i.daily_sales * 30)} units</p>
-                        </div>
-                        <button onclick="submitStockMove('IN', '${i.sku}', ${Math.ceil(i.daily_sales * 30)})" class="bg-builtinCyan text-white px-4 py-2 font-black text-[10px] uppercase transition hover:bg-builtinDarkCyan">Auto Order</button>
-                    </div>`).join("");
-          } catch(e){}
-      }
-
+      // 4. 核心功能
       async function submitStockMove(type, cSku, cQty) {
         const sku = cSku || document.getElementById("action-sku").value;
         const qty = cQty || parseInt(document.getElementById("action-qty").value);
-        if (!sku || isNaN(qty)) { alert("Select a product first."); return; }
+        if (!sku || isNaN(qty)) { alert("Select product first."); return; }
         try {
-          const response = await fetch(`${API_BASE}/stock-move`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const res = await fetch(`${API_BASE}/stock-move`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sku, quantity: type === 'OUT' ? -qty : qty, type })
           });
-          if (response.ok) { 
+          if (res.ok) { 
               loadInventory(); 
-              if (document.getElementById('tab-reports').classList.contains('active')) loadReports();
-              alert("Transaction Recorded!"); 
+              if (document.getElementById('view-reports').style.display !== 'none') loadReports();
+              if (document.getElementById('tab-procurement').classList.contains('active')) loadProcurementSuggestions();
+              
+              if(!cSku) {
+                document.getElementById('action-sku-search').value = "";
+                document.getElementById('action-sku').value = "";
+              }
               return true; 
           }
         } catch (e) { console.error(e); }
       }
 
-      async function applyFixStock() {
-          const success = await submitStockMove('IN', document.getElementById("modalSKU").innerText, parseInt(document.getElementById("modal-qty").value));
-          if (success) closeRiskModal();
-      }
-
-      async function loadReports() {
-        try {
-          const res = await fetch(`${API_BASE}/reports`);
-          const data = await res.json();
-          document.getElementById("report-container").innerHTML = data.map(row => `
-            <tr>
-              <td class="p-4 text-xs text-slate-400 font-mono">${row.timestamp}</td>
-              <td class="p-4 font-bold text-builtinBlue">${row.name}<br><span class="text-[10px] text-slate-400">${row.sku}</span></td>
-              <td class="p-4"><span class="px-2 py-1 rounded text-[10px] font-black ${row.type === 'IN' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">${row.type}</span></td>
-              <td class="p-4 text-right font-bold ${row.quantity < 0 ? 'text-red-500' : 'text-green-600'}">${row.quantity > 0 ? '+' : ''}${row.quantity}</td>
-              <td class="p-4 text-right"><button onclick="deleteLog(${row.id})" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button></td>
-            </tr>
-          `).join("");
-        } catch (e) { console.error(e); }
-      }
-
-      async function deleteLog(id) {
-          if(!confirm("Delete record?")) return;
-          try { await fetch(`${API_BASE}/transactions/${id}`, { method: 'DELETE' }); loadReports(); } catch (e) {}
-      }
-
-      async function runAIPrediction() {
-        const box = document.getElementById("ai-prediction-result");
-        box.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-builtinCyan mb-4"></div><p class="text-xs font-black text-builtinCyan animate-pulse uppercase tracking-widest">AI Butler Analyzing Trends...</p></div>`;
-        try {
-          const res = await fetch(`${API_BASE}/predict`);
-          const data = await res.json();
-          box.innerHTML = `<div class="text-sm font-medium italic text-slate-600 leading-relaxed border-l-4 border-builtinCyan pl-4">${data.prediction.replace(/\n/g, '<br>')}</div>`;
-        } catch (e) { box.innerHTML = "Prediction error."; }
+      // 5. AI 清仓策略建议 (New Replacement)
+      async function runAIRecommend() {
+          const container = document.getElementById('ai-clearance-result');
+          container.innerHTML = `<div class="col-span-2 flex flex-col items-center justify-center py-12"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-builtinCyan mb-4"></div><p class="text-xs font-black text-builtinCyan animate-pulse uppercase tracking-widest">AI Butler Analyzing Overstock...</p></div>`;
+          try {
+              const res = await fetch(`${API_BASE}/ai/recommend`, { method: 'POST' });
+              const data = await res.json();
+              container.innerHTML = data.strategies.map(s => `
+                <div class="bg-white p-8 rounded border-t-4 border-builtinCyan shadow-xl hover:scale-[1.02] transition-transform">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-1 rounded uppercase">${s.urgency} Urgency</span>
+                        <span class="text-slate-400 text-xs font-bold">${s.target_sku}</span>
+                    </div>
+                    <h4 class="text-xl font-black text-builtinBlue mb-2 uppercase">${s.strategy_name}</h4>
+                    <p class="text-slate-500 font-bold text-sm mb-4">${s.target_name}</p>
+                    <p class="text-sm text-slate-600 mb-6 leading-relaxed italic border-l-2 border-slate-100 pl-4">"${s.description}"</p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-4 rounded text-center">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Recovery</p>
+                            <p class="text-lg font-black text-builtinBlue">${s.expected_recovery}</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded text-center">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Success</p>
+                            <p class="text-lg font-black text-builtinCyan">${s.success_probability}</p>
+                        </div>
+                    </div>
+                </div>
+              `).join("");
+          } catch(e) { container.innerHTML = "<p class='col-span-2 text-center text-red-500'>AI Clearance failed to load.</p>"; }
       }
 
       async function viewRisk(sku, name) {
@@ -414,11 +399,341 @@
         try {
           const res = await fetch(`${API_BASE}/risk-analysis/${sku}`);
           const data = await res.json();
-          content.innerHTML = data.analysis.replace(/\n/g, '<br>');
+          content.innerHTML = formatAIResponse(data.analysis);
         } catch (e) { content.innerHTML = "Analysis error."; }
       }
 
-      function closeRiskModal() { document.getElementById("riskModal").classList.add("hidden"); }
+      async function exportReportToCSV() {
+        try {
+            // 1. 从后端获取最新的完整报表数据
+            const res = await fetch(`${API_BASE}/reports`);
+            const data = await res.json();
+            
+            if (!data || data.length === 0) { 
+                alert("No data available to export!"); 
+                return; 
+            }
+
+            // 2. 设置 CSV 表头
+            let csvContent = "Transaction ID,Date & Time,SKU,Product Name,Transaction Type,Quantity\n";
+
+            // 3. 遍历数据并转为 CSV 格式
+            data.forEach(row => {
+                // 处理产品名称中可能包含的逗号，用双引号包裹以防 CSV 错位
+                const safeName = `"${(row.name || 'Unknown').replace(/"/g, '""')}"`;
+                const dateStr = `"${new Date(row.timestamp).toLocaleString()}"`;
+                const qtyStr = row.quantity > 0 ? `+${row.quantity}` : row.quantity;
+                
+                // 拼接每一行
+                csvContent += `${row.id},${dateStr},${row.sku},${safeName},${row.type},${qtyStr}\n`;
+            });
+
+            // 4. 生成并下载文件 (\uFEFF 是 BOM 头，确保 Excel 打开中文不乱码)
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            // 生成带有时间戳的文件名
+            link.setAttribute("download", `Inventory_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link); 
+            link.click(); 
+            document.body.removeChild(link);
+            
+        } catch (e) {
+            console.error("CSV Export Error:", e);
+            alert("Failed to export CSV.");
+        }
+    }
+
+      async function loadSuppliers() {
+        const container = document.getElementById('supplier-container');
+        if(!container) return;
+        try {
+          const res = await fetch(`${API_BASE}/suppliers`);
+          if (!res.ok) throw new Error("Backend Error");
+          const data = await res.json();
+          
+          if(data.length === 0) {
+              container.innerHTML = `<p class="col-span-2 text-center text-slate-400 font-bold p-8">No suppliers found in database.</p>`;
+              return;
+          }
+          container.innerHTML = data.map(s => `
+            <div class="bg-white p-6 border border-slate-100 shadow-sm flex justify-between items-center">
+                <div><p class="font-black text-builtinBlue uppercase tracking-tight">${s.supplier_name}</p><p class="text-[10px] text-slate-400 mt-1">Lead Time: ${s.lead_time} Days | Email: ${s.contact_email || 'N/A'}</p></div>
+                <div class="text-right"><p class="text-xl font-black ${s.risk_score > 70 ? 'text-red-500':'text-builtinCyan'}">${s.risk_score}</p><p class="text-[9px] font-bold text-slate-400 uppercase">Risk Score</p></div>
+            </div>`).join("");
+        } catch(e) { 
+            console.error(e);
+            container.innerHTML = `<p class="col-span-2 text-center text-red-500 font-bold">Failed to load suppliers.</p>`; 
+        }
+      }
+
+      async function loadProcurementSuggestions() {
+    try {
+        const res = await fetch(`${API_BASE}/inventory`);
+        const data = await res.json();
+        const container = document.getElementById('procurement-container');
+        
+        // 筛选库存低于15天销量的产品
+        const list = data.filter(i => i.stock < (i.daily_sales * 15));
+        
+        if (list.length === 0) {
+            container.innerHTML = "<p class='p-8 text-center text-slate-400'>All stock levels optimal.</p>";
+            return;
+        }
+
+        container.innerHTML = list.map(i => {
+            const suggestQty = Math.ceil(i.daily_sales * 30);
+            return `
+            <div class="flex items-center justify-between p-6 hover:bg-slate-50 transition border-b border-slate-50 last:border-0">
+                <div>
+                    <p class="font-bold text-builtinBlue">${i.name}</p>
+                    <p class="text-[10px] text-red-500 font-bold uppercase mt-1">Suggested PO: ${suggestQty} units</p>
+                </div>
+                <button onclick="triggerAutoOrder('${i.sku}', '${i.name}', ${suggestQty})" 
+                        class="bg-builtinCyan text-white px-4 py-2 font-black text-[10px] uppercase transition hover:bg-builtinDarkCyan">
+                    Auto Order
+                </button>
+            </div>`;
+        }).join("");
+    } catch(e) { console.error(e); }
+}
+
+     async function triggerAutoOrder(sku, name, qty) {
+    // 第一次确认
+    const confirm1 = confirm(`[STEP 1/2] Confirm restocking order:\n\nProduct: ${name}\nQuantity: ${qty} units\n\nContinue?`);
+    if (!confirm1) return;
+
+    // 第二次确认
+    const confirm2 = confirm(`[FINAL WARNING] This will send an official Purchase Order email to the supplier.\n\nAre you sure?`);
+    if (!confirm2) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/order/auto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: sku, quantity: qty, type: 'IN' })
+        });
+
+        if (res.ok) {
+            const result = await res.json();
+            // 下单成功后，给用户一个“后悔药”
+            if(confirm(`✅ Order Sent Successfully!\n\nDid you make a mistake? Click "OK" to CANCEL this order right now.`)) {
+                await runCancelOrder(sku, name, qty);
+            } else {
+                loadInventory();
+                loadProcurementSuggestions();
+                loadReports();
+            }
+        } else {
+            alert("❌ Order failed. Check backend.");
+        }
+    } catch (e) {
+        alert("❌ Network Error.");
+    }
+}
+
+
+async function runCancelOrder(sku, name, qty) {
+    // 增加一个防误触确认
+    if (!confirm(`ARE YOU SURE?\n\nThis will cancel the order for ${name} (${sku}), deduct ${qty} units from stock, and send an URGENT CANCELLATION EMAIL to the supplier.`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/order/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: sku, quantity: qty, type: 'OUT' })
+        });
+        
+        if (res.ok) {
+            const result = await res.json();
+            alert(`🚫 SUCCESS!\n\nOrder for ${sku} cancelled.\nStock adjusted and supplier notified.`);
+            loadInventory();
+            loadReports(); // 刷新报表，你会看到一条冲抵的记录
+            if (document.getElementById('tab-procurement').classList.contains('active')) loadProcurementSuggestions();
+        } else {
+            alert("❌ Cancellation failed. Product might not exist.");
+        }
+    } catch (e) {
+        alert("❌ Network Error.");
+    }
+}
+
+      function filterInventory() {
+        const term = document.getElementById("skuSearch").value.toLowerCase();
+        const urgent = document.getElementById("urgentFilter").checked;
+        document.querySelectorAll(".inventory-card").forEach(card => {
+          const matches = card.dataset.sku.includes(term) || card.dataset.name.includes(term);
+          const isUrgentMatch = urgent ? card.dataset.urgent === "true" : true;
+          card.style.display = (matches && isUrgentMatch) ? "flex" : "none";
+        });
+      }
+
+      async function applyFixStock() {
+          const success = await submitStockMove('IN', document.getElementById("modalSKU").innerText, parseInt(document.getElementById("modal-qty").value));
+          if (success) closeRiskModal();
+      }
+
+      // 修改后的 loadReports 函数
+      async function loadReports() {
+    try {
+        const res = await fetch(`${API_BASE}/reports`);
+        const data = await res.json();
+        
+        const renderRows = (items) => items.map(row => {
+            // 如果是进货(IN)，我们显示一个“取消订单”的蓝色图标，如果是出货(OUT)，则不显示
+            const canCancel = row.type === 'IN';
+            
+            return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-4 text-xs text-slate-400 font-mono">${new Date(row.timestamp).toLocaleString()}</td>
+              <td class="p-4 font-bold text-builtinBlue">
+                ${row.name || 'Product'}<br>
+                <span class="text-[10px] text-slate-400">${row.sku}</span>
+              </td>
+              <td class="p-4">
+                <span class="px-2 py-1 rounded text-[10px] font-black ${row.type === 'IN' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">
+                    ${row.type}
+                </span>
+              </td>
+              <td class="p-4 text-right font-bold ${row.quantity < 0 ? 'text-red-500' : 'text-green-600'}">
+                ${row.quantity > 0 ? '+' : ''}${row.quantity}
+              </td>
+              <td class="p-4 text-right flex justify-end gap-3">
+                ${canCancel ? 
+                  `<button onclick="runCancelOrder('${row.sku}', '${row.name}', ${row.quantity})" title="Cancel Order & Notify Supplier" class="text-builtinCyan hover:text-builtinDarkCyan transition">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>` : ''
+                }
+                <button onclick="deleteLog(${row.id})" title="Delete Record" class="text-slate-300 hover:text-red-500 transition">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </td>
+            </tr>`;
+        }).join("");
+
+        const html = renderRows(data);
+        if (document.getElementById("report-container")) document.getElementById("report-container").innerHTML = html;
+        if (document.getElementById("report-container-dashboard")) document.getElementById("report-container-dashboard").innerHTML = html;
+    } catch (e) { console.error(e); }
+}
+      function showView(view) {
+          // 隐藏所有视图
+          document.getElementById('view-dashboard').style.display = 'none';
+          document.getElementById('view-suppliers').style.display = 'none'; 
+          
+          // 只显示当前点击的视图
+          const activeView = document.getElementById(`view-${view}`);
+          if (activeView) activeView.style.display = 'block';
+          
+          // 切换导航栏高亮颜色
+          document.querySelectorAll('.nav-link').forEach(link => {
+              link.classList.remove('text-builtinCyan');
+              if(link.innerText.toLowerCase() === view.toLowerCase()) {
+                  link.classList.add('text-builtinCyan');
+              }
+          });
+
+          // 核心：加载对应数据
+          if(view === 'suppliers') {
+              console.log("正在请求供应商数据..."); // 加个日志方便你看
+              loadSuppliers();
+          }
+          if(view === 'dashboard') {
+              loadInventory();
+          }
+      }
+
+      async function deleteLog(id) {
+          if(!confirm("Delete record?")) return;
+          try { await fetch(`${API_BASE}/transactions/${id}`, { method: 'DELETE' }); loadReports(); } catch (e) {}
+      }
+
+      // 🌟 升级版：全仓雷达扫描与健康诊断
+      async function runFullScan() {
+          const modal = document.getElementById("scanModal");
+          const content = document.getElementById("scanModalContent");
+          
+          // 1. 打开弹窗，展示扫描动画
+          modal.classList.remove("hidden");
+          content.innerHTML = `
+              <div class="flex flex-col items-center justify-center py-6">
+                  <div class="animate-spin inline-block w-12 h-12 border-[4px] border-builtinCyan border-t-transparent rounded-full mb-4"></div>
+                  <p class="font-black text-builtinBlue uppercase tracking-widest animate-pulse text-sm">Scanning All Data Points...</p>
+                  <p class="text-[10px] text-slate-400 mt-2">Analyzing sales velocity, stock levels, and supply chains.</p>
+              </div>
+          `;
+
+          try {
+              // 2. 获取最新库存数据
+              const res = await fetch(`${API_BASE}/inventory`);
+              const data = await res.json();
+
+              // 3. 计算风险指标
+              let stockoutRisk = 0; // 断货风险 (< 15天)
+              let overstockRisk = 0; // 积压风险 (> 45天 且 有库存)
+              let healthy = 0;
+
+              data.forEach(item => {
+                  const daysLeft = item.daily_sales > 0 ? (item.stock / item.daily_sales) : 999;
+                  if (daysLeft <= 15) {
+                      stockoutRisk++;
+                  } else if (daysLeft > 45 && item.stock > 0) {
+                      overstockRisk++;
+                  } else {
+                      healthy++;
+                  }
+              });
+
+              // 4. 模拟 AI 思考时间 1.5秒，然后出具报告
+              setTimeout(() => {
+                  content.innerHTML = `
+                      <div class="text-left animate-[fadeIn_0.3s_ease-in]">
+                          <h4 class="font-black text-2xl text-builtinBlue mb-6 text-center">SCAN COMPLETE</h4>
+                          
+                          <div class="grid grid-cols-3 gap-4 mb-8">
+                              <div class="bg-red-50 p-4 rounded-sm border-t-4 border-red-500 text-center shadow-sm">
+                                  <p class="text-3xl font-black text-red-500">${stockoutRisk}</p>
+                                  <p class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Stockout</p>
+                              </div>
+                              <div class="bg-amber-50 p-4 rounded-sm border-t-4 border-amber-500 text-center shadow-sm">
+                                  <p class="text-3xl font-black text-amber-500">${overstockRisk}</p>
+                                  <p class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Overstock</p>
+                              </div>
+                              <div class="bg-green-50 p-4 rounded-sm border-t-4 border-green-500 text-center shadow-sm">
+                                  <p class="text-3xl font-black text-green-600">${healthy}</p>
+                                  <p class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Healthy</p>
+                              </div>
+                          </div>
+
+                          <div class="flex flex-col gap-3">
+                              ${stockoutRisk > 0 ? `
+                              <button onclick="closeScanModal(); switchTab({currentTarget: document.querySelector('button[onclick*=\\'tab-procurement\\']')}, 'tab-procurement');" 
+                                      class="w-full bg-builtinBlue text-white py-3 font-black text-[10px] uppercase tracking-widest hover:bg-builtinDarkCyan transition shadow-md">
+                                  <i class="fa-solid fa-cart-shopping mr-2"></i> Review Sourcing Needs
+                              </button>` : ''}
+                              
+                              ${overstockRisk > 0 ? `
+                              <button onclick="closeScanModal(); switchTab({currentTarget: document.querySelector('button[onclick*=\\'tab-clearance\\']')}, 'tab-clearance'); runAIRecommend();" 
+                                      class="w-full bg-builtinCyan text-white py-3 font-black text-[10px] uppercase tracking-widest hover:bg-builtinDarkCyan transition shadow-md">
+                                  <i class="fa-solid fa-wand-sparkles mr-2"></i> Run Clearance AI
+                              </button>` : ''}
+                          </div>
+                      </div>
+                  `;
+              }, 1500);
+
+          } catch (e) {
+              content.innerHTML = `<p class="text-red-500 font-bold">Failed to complete system scan.</p>`;
+          }
+      }
+
+      // 关闭扫描弹窗的函数
+      function closeScanModal() { 
+          document.getElementById("scanModal").classList.add("hidden"); 
+      }
 
       function switchTab(evt, tabId) {
         const contents = document.getElementsByClassName("tab-content");
@@ -429,6 +744,79 @@
         evt.currentTarget.classList.add("tab-active");
       }
 
+      function closeRiskModal() { document.getElementById("riskModal").classList.add("hidden"); }
+
+      let detectedItems = []; // 存储 AI 识别出的产品
+
+      // 处理发票上传
+      async function handleInvoiceUpload() {
+          const fileInput = document.getElementById('invoiceFile');
+          if (!fileInput.files[0]) return;
+
+          const previewArea = document.getElementById('scanner-preview');
+          const listContainer = document.getElementById('scanner-items-list');
+
+          // 显示加载状态
+          previewArea.classList.remove('hidden');
+          listContainer.innerHTML = `
+              <div class="bg-white p-12 text-center border border-slate-100 shadow-sm">
+                  <div class="animate-spin inline-block w-8 h-8 border-[3px] border-builtinCyan border-t-transparent rounded-full mb-4"></div>
+                  <p class="text-xs font-black text-builtinBlue animate-pulse uppercase tracking-widest">Ilmu AI is reading your invoice...</p>
+              </div>`;
+
+          const formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+
+          try {
+              const res = await fetch(`${API_BASE}/invoice/analyze`, {
+                  method: 'POST',
+                  body: formData
+              });
+              const data = await res.json();
+
+              if (data.error) {
+                  listContainer.innerHTML = `<p class="p-8 text-center text-orange-500 font-bold border-2 border-orange-100">${data.error}</p>`;
+                  return;
+              }
+              
+              if (data.items && data.items.length > 0) {
+                  detectedItems = data.items;
+                  listContainer.innerHTML = data.items.map(item => `
+                      <div class="bg-white p-6 border border-slate-100 shadow-sm flex justify-between items-center hover:border-builtinCyan transition">
+                          <div>
+                              <p class="font-black text-builtinBlue text-lg uppercase tracking-tight">${item.name}</p>
+                              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Matched SKU: ${item.sku}</p>
+                          </div>
+                          <div class="text-right">
+                              <p class="text-2xl font-black text-orange-500">-${item.quantity}</p>
+                              <p class="text-[9px] font-black text-slate-400 uppercase">Sales Quantity</p>
+                          </div>
+                      </div>
+                  `).join("");
+              } else {
+                  listContainer.innerHTML = `<p class="p-12 text-center text-red-500 font-bold bg-white border border-slate-100">AI could not detect any matching SKUs in this file.</p>`;
+              }
+          } catch (e) {
+              listContainer.innerHTML = `<p class="p-12 text-center text-red-500 font-bold bg-white border border-slate-100">Server Error: Could not reach AI Service.</p>`;
+          }
+      }
+
+      // 执行批量出货
+      async function confirmBulkOutbound() {
+          if (!confirm(`CAUTION: This will decrease stock for ${detectedItems.length} items. Proceed?`)) return;
+
+          let successCount = 0;
+          for (const item of detectedItems) {
+              // 调用你已有的 submitStockMove 函数
+              const success = await submitStockMove('OUT', item.sku, item.quantity);
+              if (success) successCount++;
+          }
+
+          alert(`✅ SUCCESS: ${successCount} items processed and stock levels updated.`);
+          document.getElementById('scanner-preview').classList.add('hidden');
+          document.getElementById('invoiceFile').value = ""; // 重置
+          loadInventory(); // 刷新首页库存
+      }
       window.onload = loadInventory;
     </script>
   </body>
