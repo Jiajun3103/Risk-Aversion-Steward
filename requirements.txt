@@ -3,3 +3,10 @@ uvicorn
 pydantic
 email-validator
 pydantic[email]
+python-dotenv 
+pymupdf 
+python-docx 
+pandas 
+openpyxl
+fpdf2
+python-multipart
