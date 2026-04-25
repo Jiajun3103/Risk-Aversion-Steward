@@ -1,0 +1,39 @@
+name: Risk-Steward CI Pipeline
+
+# 当代码被 push 到 main 分支时，自动触发这个机器人
+on:
+  push:
+    branches:[ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. 抓取你的最新代码
+    - name: Check out repository code
+      uses: actions/checkout@v3
+
+    # 2. 设置 Python 3.12 环境
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+
+    # 3. 自动安装项目需要的所有依赖库
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install fastapi uvicorn requests python-dotenv pydantic email-validator "pydantic[email]" PyMuPDF python-docx pandas openpyxl fpdf2 python-multipart flake8
+
+    # 4. 代码质量检查 (Linting) 
+    - name: Check Python Syntax Errors
+      run: |
+        # 检查 backend 文件夹里的 Python 代码有没有致命语法错误
+        flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+    # 5. 打印成功消息
+    - name: Pipeline Success
+      run: echo "✅ All CI Checks Passed! Ready for deployment."
