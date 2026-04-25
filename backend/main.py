@@ -490,7 +490,7 @@ async def auto_order(data: StockUpdate):
                 data.quantity
             )
         except Exception as mail_err:
-            print(f"[DEBUG] ⚠️ Email sending环节报错 (but the order will continue): {mail_err}")
+            print(f"[DEBUG] ⚠️ Email sending(but the order will continue): {mail_err}")
 
         conn.commit()
         print(f"[DEBUG] ✅ Order process completed!")
@@ -498,7 +498,6 @@ async def auto_order(data: StockUpdate):
 
     except sqlite3.OperationalError as db_err:
         print(f"[DEBUG] ❌ Database field error: {db_err}")
-        print("提示：请确认你运行过 python init_db.py，且 inventory 表有 supplier_id 字段。")
         raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
         
     except Exception as e:
