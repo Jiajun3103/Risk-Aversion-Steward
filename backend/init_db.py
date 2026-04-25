@@ -2,32 +2,32 @@ import os
 import sqlite3
 from dotenv import load_dotenv
 
-# 加载 .env 文件
+# Load .env file
 load_dotenv()
 
-# 获取当前脚本文件所在的目录 (即 backend 文件夹)
+# Get the directory of the current script (i.e., the backend folder)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.getenv("DATABASE_NAME", "steward.db")
 db_path = os.path.join(BASE_DIR, DB_NAME)
 
 def init_database():
-    print(f"正在初始化数据库，路径: {db_path}")
+    print(f"Initializing database at path: {db_path}")
     
-    # 连接数据库
+    # Connect to the database
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # --- 1. 强力重置：删除旧表 (确保结构更新) ---
-    tables = [
+    # --- 1. Hard reset: Drop old tables (to ensure schema updates) ---
+    tables =[
         "inventory", "transactions", "suppliers", 
         "users", "action_queue", "orders", "notification_logs"
     ]
     for table in tables:
         cursor.execute(f"DROP TABLE IF EXISTS {table}")
 
-    # --- 2. 创建表结构 ---
+    # --- 2. Create table schemas ---
 
-    # 仓库库存表
+    # Warehouse Inventory Table
     cursor.execute("""
     CREATE TABLE inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,17 +41,17 @@ def init_database():
         last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
-    # 交易流水表 (Report 功能的核心)
+    # Transaction Log Table (Core of the Report function)
     cursor.execute("""
     CREATE TABLE transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         sku TEXT NOT NULL,
-        quantity INTEGER NOT NULL,   -- 正数进货，负数出货
+        quantity INTEGER NOT NULL,   -- Positive for IN (restock), Negative for OUT (sales/deduction)
         type TEXT CHECK(type IN ('IN', 'OUT')), 
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
-    # 供应商表
+    # Suppliers Table
     cursor.execute("""
     CREATE TABLE suppliers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +61,7 @@ def init_database():
         risk_score INTEGER       
     )""")
 
-    # 用户表
+    # Users Table
     cursor.execute("""
     CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +71,7 @@ def init_database():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
-    # 自动化任务队列表
+    # Automated Action Queue Table
     cursor.execute("""
     CREATE TABLE action_queue (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,7 +91,7 @@ def init_database():
         remarks TEXT
     )""")
 
-    # 演示订单表 (用于 Return Guard)
+    # Demo Orders Table (Used for Return Guard)
     cursor.execute("""
     CREATE TABLE orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +103,7 @@ def init_database():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
-    # 邮件/通知日志表
+    # Email/Notification Logs Table
     cursor.execute("""
     CREATE TABLE notification_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,10 +118,10 @@ def init_database():
         error_message TEXT
     )""")
 
-    # --- 3. 插入初始测试数据 ---
+    # --- 3. Insert Initial Test Data ---
 
-    # 插入库存 (注意 SKU 的格式)
-    inventory_data = [
+    # Insert inventory (Note the exact SKU formatting)
+    inventory_data =[
         ('SKU-1024', 'Wireless Earbuds Pro', 15, 4.2, 35.0, 'Shelf-A1', 1),
         ('SKU-2048', 'Mechanical Keyboard', 80, 1.2, 120.0, 'Shelf-B2', 2),
         ('SKU-3099', 'USB-C Fast Charger', 5, 10.5, 15.0, 'Bin-04', 1),
@@ -132,8 +132,8 @@ def init_database():
         inventory_data
     )
 
-    # 插入流水数据 (SKU 必须与上面完全对应)
-    transactions_data = [
+    # Insert transaction data (SKUs must perfectly match those above)
+    transactions_data =[
         ('SKU-1024', -30, 'OUT'),
         ('SKU-1024', -20, 'OUT'),
         ('SKU-2048', 50, 'IN'),
@@ -145,8 +145,8 @@ def init_database():
         transactions_data
     )
 
-    # 插入供应商
-    suppliers_data = [
+    # Insert suppliers
+    suppliers_data =[
         ('Xinda Tech', 'order@xinda.com', 7, 85),
         ('Global Logistics Co.', 'support@global.com', 14, 25),
         ('Fast Chip Solutions', 'sales@fastchip.com', 3, 15),
@@ -157,15 +157,16 @@ def init_database():
         suppliers_data
     )
 
-    # 插入演示订单
+    # Insert demo orders
     cursor.execute("INSERT INTO orders (order_no, customer_name, sku, item_name) VALUES ('ORD-88421', 'Mr. Zhang', 'SKU-1024', 'Wireless Earbuds Pro')")
     cursor.execute("INSERT INTO orders (order_no, customer_name, sku, item_name) VALUES ('ORD-88435', 'Ms. Li', 'SKU-3099', 'USB-C Fast Charger')")
 
     conn.commit()
     conn.close()
-    print(f"✅ 数据库 '{DB_NAME}' 已成功初始化！")
-    print(f"   - 建立了 {len(tables)} 张表")
-    print(f"   - 预填了库存、供应商和交易报表数据。")
+    
+    print(f"✅ Database '{DB_NAME}' initialized successfully!")
+    print(f"   - Created {len(tables)} tables")
+    print(f"   - Pre-filled inventory, suppliers, and transaction report data.")
 
 if __name__ == "__main__":
     init_database()

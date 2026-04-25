@@ -89,7 +89,7 @@
             </button>
             <button onclick="switchTab(event, 'tab-reports'); loadReports();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
               <i class="fa-solid fa-chart-line text-xl"></i>
-              <span class="text-[9px] uppercase">Reports</span>
+              <span class="text-[9px] uppercase">Record</span>
             </button>
             <button onclick="switchTab(event, 'tab-procurement'); loadProcurementSuggestions();" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
               <i class="fa-solid fa-cart-shopping text-xl"></i>
@@ -97,7 +97,7 @@
             </button>
             <button onclick="switchTab(event, 'tab-sales-scanner')" class="py-6 px-4 text-center font-bold text-slate-500 hover:text-builtinCyan transition flex flex-col items-center gap-2 border-b-4 border-transparent">
               <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
-              <span class="text-[9px] uppercase">Scanner</span>
+              <span class="text-[9px] uppercase">STOCK OUT</span>
             </button>
           </div>
           
@@ -121,7 +121,7 @@
           <div class="grid gap-4" id="stockout-container"></div>
         </div>
 
-        <!-- Tab 2: AI Clearance (替换了之前的 Prediction) -->
+        <!-- Tab 2: AI Clearance  -->
         <div id="tab-clearance" class="tab-content mt-8 px-4">
           <div class="mb-8 flex justify-between items-center italic">
             <div>
@@ -135,12 +135,11 @@
           </div>
         </div>
 
-        <!-- Tab 3: Reports (Dashboard 内部) -->
+        <!-- Tab 3: Reports  -->
         <div id="tab-reports" class="tab-content mt-8 px-4">
           <div class="mb-8 flex justify-between items-center">
               <h3 class="text-2xl font-extrabold text-builtinBlue">Transaction Logs</h3>
               
-              <!-- 🌟 在这里新增 Export CSV 按钮 🌟 -->
               <button onclick="exportReportToCSV()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-sm font-bold text-[10px] uppercase transition shadow-sm">
                   <i class="fa-solid fa-download mr-2"></i> Export CSV
               </button>
@@ -168,7 +167,7 @@
           <div id="procurement-container" class="bg-white rounded border border-slate-100 divide-y divide-slate-50 shadow-sm"></div>
         </div>
 
-          <!-- Tab 5: Sales Scanner (出货扫描仪) -->
+          <!-- Tab 5: Sales Scanner -->
         <div id="tab-sales-scanner" class="tab-content mt-8 px-4">
           <div class="mb-8 flex justify-between items-center">
             <div>
@@ -177,7 +176,6 @@
             </div>
           </div>
 
-          <!-- 上传区域 -->
           <div class="bg-white p-12 border-2 border-dashed border-slate-200 rounded-sm text-center hover:border-builtinCyan transition group relative">
             <input type="file" id="invoiceFile" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleInvoiceUpload()">
             <div class="pointer-events-none">
@@ -187,7 +185,6 @@
             </div>
           </div>
 
-          <!-- 分析结果预览 (默认隐藏) -->
           <div id="scanner-preview" class="mt-12 hidden">
             <div class="flex justify-between items-end mb-4 border-b-2 border-slate-100 pb-4">
               <h4 class="font-black text-xs uppercase tracking-[0.2em] text-slate-400">Items Detected by ILMU AI</h4>
@@ -196,7 +193,6 @@
               </button>
             </div>
             <div id="scanner-items-list" class="grid gap-4">
-              <!-- AI 识别出的产品会在这里显示 -->
             </div>
           </div>
         </div>
@@ -205,11 +201,9 @@
       </div>
 
     <!-- Suppliers View -->
-    <!-- 🌟 Suppliers 视图开始 (现在它是 Dashboard 的平级兄弟了) 🌟 -->
     <div id="view-suppliers" style="display:none" class="max-w-6xl mx-auto py-16 px-8">
       <div class="mb-8"><h3 class="text-2xl font-extrabold text-builtinBlue">Supply Chain Health</h3></div>
       <div id="supplier-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <!-- 数据会加载到这里 -->
       </div>
     </div>
 
@@ -234,7 +228,6 @@
         </div>
     </div>
 
-    <!-- 🌟 新增：全系统扫描弹窗 (LIVE SCAN MODAL) 🌟 -->
     <div id="scanModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 modal-backdrop" onclick="closeScanModal()"></div>
         <div class="bg-white w-full max-w-md rounded-sm shadow-2xl relative z-10 overflow-hidden">
@@ -247,19 +240,14 @@
                 <button onclick="closeScanModal()" class="text-white/50 hover:text-white transition text-2xl">&times;</button>
             </div>
             <div id="scanModalContent" class="p-8 text-center min-h-[250px] flex flex-col justify-center">
-                <!-- 内容由 JS 动态生成 -->
             </div>
         </div>
     </div>
-
-    <!-- 引用外部的 app.js -->
-    <!-- <script src="js/app.js"></script> -->
 
    <script> 
       const API_BASE = "http://127.0.0.1:8000/api";
       let allProducts = [];
 
-      // 1. 数据格式化辅助
       function formatAIResponse(text) {
           if (!text) return "No analysis available.";
           return text
@@ -267,8 +255,6 @@
               .replace(/\*\*(.*?)\*\*/g, '<b class="text-builtinBlue font-bold">$1</b>') 
               .replace(/- (.*?)(<br>|$)/g, '<li class="ml-4 list-disc text-slate-600">$1</li>'); 
       }
-
-      // 2. 加载库存
       async function loadInventory() {
         try {
           const res = await fetch(`${API_BASE}/inventory`);
@@ -298,7 +284,6 @@
         } catch (e) { console.error(e); }
       }
 
-      // 3. 搜索下拉逻辑
       function toggleSkuDropdown(show) {
           const results = document.getElementById('sku-dropdown-results');
           if (show) results.classList.remove('hidden');
@@ -333,7 +318,6 @@
           if (e.target !== dropdown && e.target !== input) toggleSkuDropdown(false);
       }
 
-      // 4. 核心功能
       async function submitStockMove(type, cSku, cQty) {
         const sku = cSku || document.getElementById("action-sku").value;
         const qty = cQty || parseInt(document.getElementById("action-qty").value);
@@ -357,7 +341,6 @@
         } catch (e) { console.error(e); }
       }
 
-      // 5. AI 清仓策略建议 (New Replacement)
       async function runAIRecommend() {
           const container = document.getElementById('ai-clearance-result');
           container.innerHTML = `<div class="col-span-2 flex flex-col items-center justify-center py-12"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-builtinCyan mb-4"></div><p class="text-xs font-black text-builtinCyan animate-pulse uppercase tracking-widest">AI Butler Analyzing Overstock...</p></div>`;
@@ -405,7 +388,6 @@
 
       async function exportReportToCSV() {
         try {
-            // 1. 从后端获取最新的完整报表数据
             const res = await fetch(`${API_BASE}/reports`);
             const data = await res.json();
             
@@ -414,26 +396,20 @@
                 return; 
             }
 
-            // 2. 设置 CSV 表头
             let csvContent = "Transaction ID,Date & Time,SKU,Product Name,Transaction Type,Quantity\n";
 
-            // 3. 遍历数据并转为 CSV 格式
             data.forEach(row => {
-                // 处理产品名称中可能包含的逗号，用双引号包裹以防 CSV 错位
                 const safeName = `"${(row.name || 'Unknown').replace(/"/g, '""')}"`;
                 const dateStr = `"${new Date(row.timestamp).toLocaleString()}"`;
                 const qtyStr = row.quantity > 0 ? `+${row.quantity}` : row.quantity;
                 
-                // 拼接每一行
                 csvContent += `${row.id},${dateStr},${row.sku},${safeName},${row.type},${qtyStr}\n`;
             });
 
-            // 4. 生成并下载文件 (\uFEFF 是 BOM 头，确保 Excel 打开中文不乱码)
             const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            // 生成带有时间戳的文件名
             link.setAttribute("download", `Inventory_Report_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link); 
             link.click(); 
@@ -474,7 +450,6 @@
         const data = await res.json();
         const container = document.getElementById('procurement-container');
         
-        // 筛选库存低于15天销量的产品
         const list = data.filter(i => i.stock < (i.daily_sales * 15));
         
         if (list.length === 0) {
@@ -500,11 +475,9 @@
 }
 
      async function triggerAutoOrder(sku, name, qty) {
-    // 第一次确认
     const confirm1 = confirm(`[STEP 1/2] Confirm restocking order:\n\nProduct: ${name}\nQuantity: ${qty} units\n\nContinue?`);
     if (!confirm1) return;
 
-    // 第二次确认
     const confirm2 = confirm(`[FINAL WARNING] This will send an official Purchase Order email to the supplier.\n\nAre you sure?`);
     if (!confirm2) return;
 
@@ -517,7 +490,6 @@
 
         if (res.ok) {
             const result = await res.json();
-            // 下单成功后，给用户一个“后悔药”
             if(confirm(`✅ Order Sent Successfully!\n\nDid you make a mistake? Click "OK" to CANCEL this order right now.`)) {
                 await runCancelOrder(sku, name, qty);
             } else {
@@ -535,7 +507,6 @@
 
 
 async function runCancelOrder(sku, name, qty) {
-    // 增加一个防误触确认
     if (!confirm(`ARE YOU SURE?\n\nThis will cancel the order for ${name} (${sku}), deduct ${qty} units from stock, and send an URGENT CANCELLATION EMAIL to the supplier.`)) {
         return;
     }
@@ -551,7 +522,7 @@ async function runCancelOrder(sku, name, qty) {
             const result = await res.json();
             alert(`🚫 SUCCESS!\n\nOrder for ${sku} cancelled.\nStock adjusted and supplier notified.`);
             loadInventory();
-            loadReports(); // 刷新报表，你会看到一条冲抵的记录
+            loadReports(); 
             if (document.getElementById('tab-procurement').classList.contains('active')) loadProcurementSuggestions();
         } else {
             alert("❌ Cancellation failed. Product might not exist.");
@@ -576,14 +547,12 @@ async function runCancelOrder(sku, name, qty) {
           if (success) closeRiskModal();
       }
 
-      // 修改后的 loadReports 函数
       async function loadReports() {
     try {
         const res = await fetch(`${API_BASE}/reports`);
         const data = await res.json();
         
         const renderRows = (items) => items.map(row => {
-            // 如果是进货(IN)，我们显示一个“取消订单”的蓝色图标，如果是出货(OUT)，则不显示
             const canCancel = row.type === 'IN';
             
             return `
@@ -620,15 +589,12 @@ async function runCancelOrder(sku, name, qty) {
     } catch (e) { console.error(e); }
 }
       function showView(view) {
-          // 隐藏所有视图
           document.getElementById('view-dashboard').style.display = 'none';
           document.getElementById('view-suppliers').style.display = 'none'; 
           
-          // 只显示当前点击的视图
           const activeView = document.getElementById(`view-${view}`);
           if (activeView) activeView.style.display = 'block';
           
-          // 切换导航栏高亮颜色
           document.querySelectorAll('.nav-link').forEach(link => {
               link.classList.remove('text-builtinCyan');
               if(link.innerText.toLowerCase() === view.toLowerCase()) {
@@ -636,9 +602,8 @@ async function runCancelOrder(sku, name, qty) {
               }
           });
 
-          // 核心：加载对应数据
           if(view === 'suppliers') {
-              console.log("正在请求供应商数据..."); // 加个日志方便你看
+              console.log("正在请求供应商数据..."); 
               loadSuppliers();
           }
           if(view === 'dashboard') {
@@ -651,12 +616,10 @@ async function runCancelOrder(sku, name, qty) {
           try { await fetch(`${API_BASE}/transactions/${id}`, { method: 'DELETE' }); loadReports(); } catch (e) {}
       }
 
-      // 🌟 升级版：全仓雷达扫描与健康诊断
       async function runFullScan() {
           const modal = document.getElementById("scanModal");
           const content = document.getElementById("scanModalContent");
           
-          // 1. 打开弹窗，展示扫描动画
           modal.classList.remove("hidden");
           content.innerHTML = `
               <div class="flex flex-col items-center justify-center py-6">
@@ -667,13 +630,11 @@ async function runCancelOrder(sku, name, qty) {
           `;
 
           try {
-              // 2. 获取最新库存数据
               const res = await fetch(`${API_BASE}/inventory`);
               const data = await res.json();
 
-              // 3. 计算风险指标
-              let stockoutRisk = 0; // 断货风险 (< 15天)
-              let overstockRisk = 0; // 积压风险 (> 45天 且 有库存)
+              let stockoutRisk = 0; // Out-of-stock risk (< 15 days)
+              let overstockRisk = 0; // Backlog risk (> 45 days and in stock)
               let healthy = 0;
 
               data.forEach(item => {
@@ -687,7 +648,6 @@ async function runCancelOrder(sku, name, qty) {
                   }
               });
 
-              // 4. 模拟 AI 思考时间 1.5秒，然后出具报告
               setTimeout(() => {
                   content.innerHTML = `
                       <div class="text-left animate-[fadeIn_0.3s_ease-in]">
@@ -730,7 +690,6 @@ async function runCancelOrder(sku, name, qty) {
           }
       }
 
-      // 关闭扫描弹窗的函数
       function closeScanModal() { 
           document.getElementById("scanModal").classList.add("hidden"); 
       }
@@ -746,9 +705,8 @@ async function runCancelOrder(sku, name, qty) {
 
       function closeRiskModal() { document.getElementById("riskModal").classList.add("hidden"); }
 
-      let detectedItems = []; // 存储 AI 识别出的产品
+      let detectedItems = []; 
 
-      // 处理发票上传
       async function handleInvoiceUpload() {
           const fileInput = document.getElementById('invoiceFile');
           if (!fileInput.files[0]) return;
@@ -756,7 +714,6 @@ async function runCancelOrder(sku, name, qty) {
           const previewArea = document.getElementById('scanner-preview');
           const listContainer = document.getElementById('scanner-items-list');
 
-          // 显示加载状态
           previewArea.classList.remove('hidden');
           listContainer.innerHTML = `
               <div class="bg-white p-12 text-center border border-slate-100 shadow-sm">
@@ -801,21 +758,19 @@ async function runCancelOrder(sku, name, qty) {
           }
       }
 
-      // 执行批量出货
       async function confirmBulkOutbound() {
           if (!confirm(`CAUTION: This will decrease stock for ${detectedItems.length} items. Proceed?`)) return;
 
           let successCount = 0;
           for (const item of detectedItems) {
-              // 调用你已有的 submitStockMove 函数
               const success = await submitStockMove('OUT', item.sku, item.quantity);
               if (success) successCount++;
           }
 
           alert(`✅ SUCCESS: ${successCount} items processed and stock levels updated.`);
           document.getElementById('scanner-preview').classList.add('hidden');
-          document.getElementById('invoiceFile').value = ""; // 重置
-          loadInventory(); // 刷新首页库存
+          document.getElementById('invoiceFile').value = ""; 
+          loadInventory(); 
       }
       window.onload = loadInventory;
     </script>

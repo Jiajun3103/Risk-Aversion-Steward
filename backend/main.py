@@ -14,14 +14,14 @@ import docx
 import pandas as pd
 import io
 
-# --- 1. 环境加载与路径配置 ---
+# --- 1. Environment Loading and Path Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
 ROOT_DIR = os.path.dirname(BASE_DIR)
 load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
 app = FastAPI()
 
-# --- 2. CORS 跨域配置 ---
+# --- 2. CORS Configuration ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,24 +29,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 3. 配置获取 ---
+# --- 3. Configuration Retrieval ---
 ILMU_API_KEY = os.getenv("ILMU_API_KEY")
-ZAI_API_KEY = os.getenv("ZAI_API_KEY") # 备选 Key
+ZAI_API_KEY = os.getenv("ZAI_API_KEY") # Backup Key
 DB_NAME = os.getenv("DATABASE_NAME", "steward.db")
 db_path = os.path.join(BASE_DIR, DB_NAME)
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "") # 你的邮箱
-SMTP_PASS = os.getenv("SMTP_PASSWORD", "") # 你的邮箱授权码
-SMTP_FROM = os.getenv("SMTP_FROM", "") # 发件人显示名称
+SMTP_USER = os.getenv("SMTP_USER", "") # Your email
+SMTP_PASS = os.getenv("SMTP_PASSWORD", "") # Your email authorization code
+SMTP_FROM = os.getenv("SMTP_FROM", "") # Sender display name
 
 def get_db_connection():
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
-# --- 4. 数据库启动自检 ---
+# --- 4. Database Startup Self-Check ---
 def init_db_internal():
     conn = get_db_connection()
     conn.execute("""
@@ -70,7 +70,7 @@ def init_db_internal():
     conn.commit()
     conn.close()
 
-# --- 5. 辅助函数 ---
+# --- 5. Helper Functions ---
 def _safe_num(value, default=0.0) -> float:
     try:
         if value is None: return float(default)
@@ -79,8 +79,8 @@ def _safe_num(value, default=0.0) -> float:
         return float(default)
 
 def _local_strategies(inventory_data: list) -> list:
-    """本地兜底算法：当 AI 不可用时调用"""
-    # 找库存积压最严重的（天数最多的）
+    """Local fallback algorithm: Called when AI is unavailable"""
+    # Find the most severely overstocked items (highest days left)
     sorted_items = sorted(inventory_data, key=lambda x: x.get('days_left', 0), reverse=True)
     strategies = []
     pool = [
@@ -90,7 +90,7 @@ def _local_strategies(inventory_data: list) -> list:
     for i, item in enumerate(sorted_items[:2]):
         s_name, s_desc, s_urgency, s_prob = pool[i % len(pool)]
         stock = _safe_num(item.get('stock'), 0)
-        cost = _safe_num(item.get('cost_price'), 10.0) # 默认成本
+        cost = _safe_num(item.get('cost_price'), 10.0) # Default cost
         est = f"${round(stock * cost * 0.6):,.0f}"
         strategies.append({
             "strategy_name": s_name,
@@ -104,13 +104,13 @@ def _local_strategies(inventory_data: list) -> list:
     return strategies
 
 def send_supplier_email(supplier_email, supplier_name, item_name, qty):
-    # 如果没配置 SMTP，则只打印日志，不报错，方便演示
+    # If SMTP is not configured, only log the action without raising an error for demonstration purposes
     if not SMTP_USER or not supplier_email:
-        print(f"DEBUG: 模拟发送下单邮件到 {supplier_email} | 数量: {qty} | 产品: {item_name}")
+        print(f"DEBUG: Simulating sending order email to {supplier_email} | Quantity: {qty} | Product: {item_name}")
         return True
     try:
-        subject = f"【采购订单】新订单通知: {item_name}"
-        body = f"尊敬的 {supplier_name}，\n\n我们需要订购以下产品：\n产品名称：{item_name}\n订购数量：{qty}\n\n请尽快确认收货日期，谢谢。"
+        subject = f"【Purchase Order】New Order Notification: {item_name}"
+        body = f"Dear {supplier_name},\n\nWe need to order the following product:\nProduct Name: {item_name}\nOrder Quantity: {qty}\n\nPlease confirm the delivery date as soon as possible. Thank you."
         msg = MIMEText(body)
         msg["Subject"] = subject
         msg["From"] = f"Inventory System <{SMTP_FROM}>"
@@ -122,12 +122,12 @@ def send_supplier_email(supplier_email, supplier_name, item_name, qty):
             server.sendmail(SMTP_FROM, [supplier_email], msg.as_string())
         return True
     except Exception as e:
-        print(f"邮件发送失败: {e}")
+        print(f"Failed to send email: {e}")
         return False
     
 def send_cancellation_email(supplier_email, supplier_name, item_name, qty, sku):
     if not SMTP_USER or not supplier_email:
-        print(f"DEBUG: 模拟发送【取消订单】邮件到 {supplier_email} | SKU: {sku}")
+        print(f"DEBUG: Simulating sending 【Order Cancellation】email to {supplier_email} | SKU: {sku}")
         return True
     try:
         subject = f"URGENT: Order Cancellation - SKU: {sku}"
@@ -155,7 +155,7 @@ Inventory Management Team"""
             server.sendmail(SMTP_FROM, [supplier_email], msg.as_string())
         return True
     except Exception as e:
-        print(f"取消邮件发送失败: {e}")
+        print(f"Failed to send cancellation email: {e}")
         return False
 
 
@@ -173,11 +173,11 @@ def call_ilmu_ai(prompt: str, temperature: float = 0.1):
         "model": "ilmu-glm-5.1",
         "messages":[{"role": "user", "content": prompt}],
         "temperature": temperature,
-        "max_tokens": 10000  # 限制输出长度
+        "max_tokens": 10000  # Limit output length
     }
     
     try:
-        # 【修改这里】把 timeout 改为 120 秒，给 AI 更多的时间思考
+        # 【Modified here】Set timeout to 120 seconds to give AI more time to process
         response = req.post(api_url, headers=headers, json=payload, timeout=120)
         response.raise_for_status()
         result = response.json()
@@ -189,12 +189,12 @@ def call_ilmu_ai(prompt: str, temperature: float = 0.1):
         print(f"❌ ILMU AI Call Failed: {e}")
         return None
     
-# --- 升级版 AI 调用函数 (带自动备用切换) ---
+# --- Upgraded AI Call Function (with automatic fallback switching) ---
 def call_ai_with_fallback(prompt: str, temperature: float = 0.1):
-    # 策略 1: 尝试 ILMU AI (超时设为 15 秒，不行赶紧换下一个)
+    # Strategy 1: Try ILMU AI (set timeout to 15 seconds, switch quickly if it fails)
     if ILMU_API_KEY:
         try:
-            print("[DEBUG] 尝试调用 ILMU AI...")
+            print("[DEBUG] Attempting to call ILMU AI...")
             res = req.post(
                 "https://api.ilmu.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {ILMU_API_KEY.strip()}", "Content-Type": "application/json"},
@@ -204,12 +204,12 @@ def call_ai_with_fallback(prompt: str, temperature: float = 0.1):
             res.raise_for_status()
             return res.json()["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            print(f"[DEBUG] ⚠️ ILMU AI 失败或超时: {e}，准备切换备用路线...")
+            print(f"[DEBUG] ⚠️ ILMU AI failed or timed out: {e}, preparing to switch to backup...")
 
-    # 策略 2: 尝试 Z.ai (备选模型)
+    # Strategy 2: Try Z.ai (backup model)
     if ZAI_API_KEY:
         try:
-            print("[DEBUG] 尝试调用备选 Z.ai (glm-4-flash)...")
+            print("[DEBUG] Attempting to call backup Z.ai (glm-4-flash)...")
             res = req.post(
                 "https://api.z.ai/api/paas/v4/chat/completions",
                 headers={"Authorization": f"Bearer {ZAI_API_KEY.strip()}", "Content-Type": "application/json"},
@@ -219,13 +219,13 @@ def call_ai_with_fallback(prompt: str, temperature: float = 0.1):
             res.raise_for_status()
             return res.json()["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            print(f"[DEBUG] ⚠️ Z.ai 也失败: {e}")
+            print(f"[DEBUG] ⚠️ Z.ai also failed: {e}")
 
-    # 所有 AI 都挂了
-    print("❌ 所有 AI 接口调用均失败。")
+    # All AI calls failed
+    print("❌ All AI interface calls failed.")
     return None
 
-# --- 6. 数据模型 ---
+# --- 6. Data Models ---
 class StockUpdate(BaseModel):
     sku: str
     quantity: int
@@ -245,7 +245,7 @@ class InvoiceItem(BaseModel):
     quantity: int
     name: str
 
-# --- 7. 核心业务接口 ---
+# --- 7. Core Business Interfaces ---
 
 @app.get("/api/inventory")
 async def get_inventory():
@@ -290,7 +290,7 @@ async def delete_log(log_id: int):
     conn.close()
     return {"message": "Deleted"}
 
-# --- 文本提取辅助函数 ---
+# --- Text Extraction Helper Function ---
 async def extract_text_from_file(file: UploadFile):
     content = await file.read()
     text = ""
@@ -298,7 +298,7 @@ async def extract_text_from_file(file: UploadFile):
         if file.filename.endswith(".pdf"):
             doc = fitz.open(stream=content, filetype="pdf")
             for page in doc: 
-                # 使用 "text" 模式提取，避免特殊控制字符
+                # Use "text" mode to extract, avoiding special control characters
                 text += page.get_text("text") + " "
         elif file.filename.endswith(".docx"):
             doc = docx.Document(io.BytesIO(content))
@@ -310,19 +310,19 @@ async def extract_text_from_file(file: UploadFile):
         else:
             text = content.decode("utf-8", errors="ignore")
     except Exception as e:
-        print(f"[DEBUG] 文件解析错误: {e}")
+        print(f"[DEBUG] File parsing error: {e}")
         text = "File parsing failed."
     
-    # 彻底清洗掉所有非 ASCII 字符（解决某些不可见字符让 AI 卡死的问题）
+    # Thoroughly clean all non-ASCII characters (to prevent AI from crashing due to invisible characters)
     import re
-    clean_text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+    clean_text = re.sub(r'[^"]', ' ', text)
     return clean_text
 
-# --- 8. 核心 AI 决策接口 (已更新) ---
+# --- 8. Core AI Decision Interface (Updated) ---
 
 @app.post("/api/ai/recommend")
 async def ai_recommend():
-    # 1. 从数据库获取库存数据
+    # 1. From the database get inventory data
     conn = get_db_connection()
     items = conn.execute('SELECT * FROM inventory').fetchall()
     conn.close()
@@ -333,7 +333,7 @@ async def ai_recommend():
         daily = _safe_num(item.get('daily_sales'))
         item['days_left'] = int(stock / daily) if daily > 0 else 999
 
-    # 2. 构建 AI Prompt (使用你要求的版本)
+    # 2. Construct AI Prompt (using your required version)
     prompt = f"""You are an expert inventory liquidation analyst. Analyze this inventory and suggest exactly 2 clearance strategies to recover cash and reduce dead stock.
 
 Inventory data:
@@ -350,18 +350,18 @@ Return ONLY a valid JSON array with exactly 2 strategy objects. Each object must
 
 Return ONLY the JSON array. No markdown, no explanation, no code blocks."""
 
-    # 3. 多级降级调用逻辑
+    # 3. Multi-level degradation logic
     ai_source = "local-rules"
     strategies = []
     
     try:
-        # 尝试优先级 1: ILMU
+        # Try priority level 1: ILMU
         if ILMU_API_KEY:
             api_url = "https://api.ilmu.ai/v1/chat/completions"
             api_key = ILMU_API_KEY
             model = "ilmu-glm-5.1"
             ai_source = "ilmu-glm-5.1"
-        # 尝试优先级 2: Z.ai
+        # Try priority level 2: Z.ai
         elif ZAI_API_KEY:
             api_url = "https://api.z.ai/api/paas/v4/chat/completions"
             api_key = ZAI_API_KEY
@@ -383,7 +383,7 @@ Return ONLY the JSON array. No markdown, no explanation, no code blocks."""
         response.raise_for_status()
         ai_text = response.json()["choices"][0]["message"]["content"].strip()
 
-        # 清洗 Markdown 格式
+        # Clean Markdown formatting
         if ai_text.startswith("```"):
             ai_text = ai_text.split("```")[1]
             if ai_text.startswith("json"): ai_text = ai_text[4:]
@@ -392,7 +392,7 @@ Return ONLY the JSON array. No markdown, no explanation, no code blocks."""
 
     except Exception as e:
         print(f"AI Error ({ai_source}): {e}")
-        # 最终降级：本地规则
+        # Final fallback: local rules
         strategies = _local_strategies(inventory_data)
         ai_source = "local-fallback"
 
@@ -405,11 +405,11 @@ async def get_sku_risk_analysis(sku: str):
     conn.close()
     if not item: raise HTTPException(status_code=404)
     
-    # 简单调用 AI 进行单品分析
-    prompt = f"深度分析该产品风险并给一条建议：{json.dumps(dict(item), ensure_ascii=False)}"
+    # Simple call to AI for SKU analysis
+    prompt = f"Deep analysis of this product risk and give one suggestion: {json.dumps(dict(item), ensure_ascii=False)}"
     
     try:
-        # 这里复用简单的调用逻辑
+        # Reuse simple call logic
         headers = {"Authorization": f"Bearer {ILMU_API_KEY}", "Content-Type": "application/json"}
         res = req.post("https://api.ilmu.ai/v1/chat/completions", headers=headers, 
                        json={"model": "ilmu-glm-5.1", "messages": [{"role":"user","content":prompt}]})
@@ -419,7 +419,7 @@ async def get_sku_risk_analysis(sku: str):
         
     return {"sku": sku, "analysis": analysis}
 
-# --- 9. 用户认证接口 ---
+# --- 9. User Authentication Interfaces ---
 
 @app.post("/api/register")
 async def register_user(user: UserRegister):
@@ -448,9 +448,9 @@ async def auto_order(data: StockUpdate):
     conn = None
     try:
         conn = get_db_connection()
-        # 1. 查找产品及供应商 (增加 UPPER 处理大小写)
-        # 注意：这里我们打印出正在查找的 SKU，方便你调试
-        print(f"\n[DEBUG] 收到下单请求: SKU={data.sku}, Qty={data.quantity}")
+        # 1. Find the product and supplier (add UPPER processing for case-insensitive)
+        # Note: We print out the SKU we are looking for, to help you debug
+        print(f"\n[DEBUG] Received order request: SKU={data.sku}, Qty={data.quantity}")
 
         query = '''
             SELECT i.name, s.supplier_name, s.contact_email 
@@ -461,13 +461,13 @@ async def auto_order(data: StockUpdate):
         item_row = conn.execute(query, (data.sku,)).fetchone()
         
         if not item_row:
-            print(f"[DEBUG] ❌ 找不到产品: 数据库中没有 SKU 为 {data.sku} 的记录")
+            print(f"[DEBUG] ❌ Not found product: No record with SKU {data.sku}")
             raise HTTPException(status_code=404, detail="Product not found")
 
-        item = dict(item_row) # 转换为字典
+        item = dict(item_row) # Convert to dictionary
         
-        # 2. 执行数据库更新
-        print(f"[DEBUG] 正在更新库存...")
+        # 2. Execute database update
+        print(f"[DEBUG] Updating inventory...")
         conn.execute(
             'UPDATE inventory SET stock = stock + ? WHERE UPPER(sku) = UPPER(?)', 
             (data.quantity, data.sku)
@@ -478,11 +478,11 @@ async def auto_order(data: StockUpdate):
             (data.sku.upper(), data.quantity, 'IN')
         )
         
-        # 3. 发送邮件 (这里最容易报错 500)
-        # 我们把发邮件放在 try 块里，即使邮件失败，也不要让数据库下单失败
+        # 3. Send email (here is where it's easy to fail)
+        # We put the email sending in a try block, so even if the email fails, the database order doesn't fail
         email_sent = False
         try:
-            print(f"[DEBUG] 尝试发送邮件给: {item.get('contact_email')}")
+            print(f"[DEBUG] Attempting to send email to: {item.get('contact_email')}")
             email_sent = send_supplier_email(
                 item.get('contact_email', ''), 
                 item.get('supplier_name', 'Supplier'), 
@@ -490,22 +490,22 @@ async def auto_order(data: StockUpdate):
                 data.quantity
             )
         except Exception as mail_err:
-            print(f"[DEBUG] ⚠️ 邮件发送环节报错 (但下单将继续): {mail_err}")
+            print(f"[DEBUG] ⚠️ Email sending环节报错 (but the order will continue): {mail_err}")
 
         conn.commit()
-        print(f"[DEBUG] ✅ 下单流程全部完成！")
+        print(f"[DEBUG] ✅ Order process completed!")
         return {"status": "success", "email_sent": email_sent}
 
     except sqlite3.OperationalError as db_err:
-        print(f"[DEBUG] ❌ 数据库字段错误: {db_err}")
+        print(f"[DEBUG] ❌ Database field error: {db_err}")
         print("提示：请确认你运行过 python init_db.py，且 inventory 表有 supplier_id 字段。")
         raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
         
     except Exception as e:
         if conn: conn.rollback()
-        print(f"[DEBUG] ❌ 未知错误: {str(e)}")
+        print(f"[DEBUG] ❌ Unknown error: {str(e)}")
         import traceback
-        traceback.print_exc() # 打印详细的报错堆栈到终端
+        traceback.print_exc() # Print detailed traceback to terminal
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if conn: conn.close()
@@ -515,7 +515,7 @@ async def cancel_auto_order(data: StockUpdate):
     conn = None
     try:
         conn = get_db_connection()
-        # 查找产品和供应商信息
+        # Find the product and supplier information
         query = '''
             SELECT i.name, s.supplier_name, s.contact_email 
             FROM inventory i 
@@ -528,15 +528,15 @@ async def cancel_auto_order(data: StockUpdate):
 
         item = dict(item_row)
 
-        # 核心逻辑：扣除之前增加的库存 (stock = stock - quantity)
+        # Core logic: Deduct the previously added stock (stock = stock - quantity)
         conn.execute('UPDATE inventory SET stock = stock - ? WHERE UPPER(sku) = UPPER(?)', 
                      (data.quantity, data.sku))
         
-        # 记录一笔负数流水
+        # Record a negative transaction
         conn.execute('INSERT INTO transactions (sku, quantity, type) VALUES (?, ?, ?)', 
                      (data.sku.upper(), -data.quantity, 'OUT'))
         
-        # 发送正式取消邮件
+        # Send the cancellation email
         email_sent = send_cancellation_email(
             item.get('contact_email'), 
             item.get('supplier_name'), 
@@ -567,20 +567,20 @@ async def get_suppliers():
 @app.post("/api/invoice/analyze")
 async def analyze_invoice(file: UploadFile = File(...)):
     try:
-        print(f"\n[DEBUG] 收到文件上传: {file.filename}")
-        # 1. 提取并清洗文本
+        print(f"\n[DEBUG] Received file upload: {file.filename}")
+        # 1. Extract and clean text
         raw_text = await extract_text_from_file(file)
-        # 只取前 800 字符，足够提取发票内容了
+        # Only take the first 800 characters, enough to extract invoice content
         raw_text = " ".join(raw_text.split())[:800] 
-        print(f"[DEBUG] 提取的文本前 100 字符: {raw_text[:100]}...")
+        print(f"[DEBUG] Extracted text preview: {raw_text[:100]}...")
 
-        # 2. 获取当前库里的 SKU
+        # 2. Get current SKU list
         conn = get_db_connection()
         products = conn.execute('SELECT sku, name FROM inventory').fetchall()
         sku_list = [{"s": p["sku"], "n": p["name"]} for p in products]
         conn.close()
 
-        # 3. 构造 Prompt
+        # 3. Construct Prompt
         example_json = '[{"sku": "SKU-1024", "name": "Product Name", "quantity": 1}]'
         prompt = f"""
         Extract sold items from this invoice text. 
@@ -595,26 +595,26 @@ async def analyze_invoice(file: UploadFile = File(...)):
         Do not include any explanations or markdown code blocks. Only the raw [ ... ] array.
         """
         
-        # 4. 调用高可用 AI
-        print("[DEBUG] 正在发送给 AI 进行分析...")
+        # 4. Call high-availability AI
+        print("[DEBUG] Sending to AI for analysis...")
         ai_response = call_ai_with_fallback(prompt)
         
-        # 🌟 终极兜底方案：如果 AI 还是挂了，我们智能模拟出货数据
+        # 🌟 Ultimate fallback plan: If AI still fails, we simulate out-of-stock data
         if not ai_response or ai_response == "ERROR_TIMEOUT":
-            print("[DEBUG] 🚨 AI 超时或无响应，启用智能 Demo 兜底模式。")
+            print("[DEBUG] 🚨 AI timed out or failed, enabling intelligent Demo fallback mode.")
             if sku_list:
-                # 为了逼真，我们从库存里随机挑 2-3 个产品，而不是永远固定的那几个
+                # To make it realistic, we randomly pick 2-3 products from the inventory
                 import random
                 mock_data =[]
                 selected_skus = random.sample(sku_list, min(3, len(sku_list)))
                 for item in selected_skus:
-                    # 随机生成 1 到 15 的出货数量
+                    # Randomly generate 1 to 15 units
                     mock_data.append({
                         "sku": item["s"], 
                         "name": item["n"], 
                         "quantity": random.randint(1, 15)
                     })
-                # 我们模拟等待了 2 秒，让前端有 Loading 的感觉
+                # We simulate waiting 2 seconds for loading
                 import asyncio
                 await asyncio.sleep(2)
                 return {"items": mock_data}
